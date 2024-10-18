@@ -1,10 +1,5 @@
 cmake_minimum_required(VERSION 3.2)
 
-if(DEFINED ENV{INCREDIBUILD_XGE})
-    set(CMAKE_C_COMPILER_LAUNCHER $ENV{INCREDIBUILD_XGE})
-    set(CMAKE_CXX_COMPILER_LAUNCHER $ENV{INCREDIBUILD_XGE})
-endif()
-
 # Add depthai-core dependency
 add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/depthai-core EXCLUDE_FROM_ALL)
 
