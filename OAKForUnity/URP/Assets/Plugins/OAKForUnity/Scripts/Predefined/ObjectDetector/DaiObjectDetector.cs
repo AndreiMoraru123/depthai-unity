@@ -34,36 +34,36 @@ namespace OAKForUnity
         * @param useIMU True if IMU information is requested, False otherwise. Requires freq in pipeline creation.
         * @param deviceNum Device selection on unity dropdown
         * @returns Json with results or information about device availability. 
-        */    
-        private static extern IntPtr ObjectDetectorResults(out FrameInfo frameInfo, bool getPreview,float objectScoreThreshold, bool useDepth, bool retrieveInformation, bool useIMU, int deviceNum);
+        */
+        private static extern IntPtr ObjectDetectorResults(out FrameInfo frameInfo, bool getPreview, float objectScoreThreshold, bool useDepth, bool retrieveInformation, bool useIMU, int deviceNum);
 
-        
+
         // Editor attributes
-        [Header("RGB Camera")] 
+        [Header("RGB Camera")]
         public float cameraFPS = 30;
         public RGBResolution rgbResolution;
         private const bool Interleaved = false;
         private const ColorOrder ColorOrderV = ColorOrder.BGR;
 
-        [Header("Mono Cameras")] 
+        [Header("Mono Cameras")]
         public MonoResolution monoResolution;
 
-        [Header("Object Detector Configuration")] 
+        [Header("Object Detector Configuration")]
         public MedianFilter medianFilter;
         public bool useIMU = false;
         public bool retrieveSystemInformation = false;
-        public float detectionScoreThreshold; 
+        public float detectionScoreThreshold;
         private const bool GETPreview = true;
         private const bool UseDepth = true;
 
-        [Header("Object Detector Results")] 
+        [Header("Object Detector Results")]
         public Texture2D colorTexture;
         public string objectDetectorResults;
         public string systemInfo;
 
-        [Header("Objects")] 
+        [Header("Objects")]
         public GameObject apple;
-        
+
         // private attributes
         private Color32[] _colorPixel32;
         private GCHandle _colorPixelHandle;
@@ -85,7 +85,7 @@ namespace OAKForUnity
         {
             // Init dataPath to load object detector NN model
             _dataPath = Application.dataPath;
-            
+
             InitTexture();
 
             // Init FrameInfo. Only need it in case memcpy data ptr on plugin lib.
@@ -97,16 +97,16 @@ namespace OAKForUnity
         {
             // Color camera
             config.colorCameraFPS = cameraFPS;
-            config.colorCameraResolution = (int) rgbResolution;
+            config.colorCameraResolution = (int)rgbResolution;
             config.colorCameraInterleaved = Interleaved;
-            config.colorCameraColorOrder = (int) ColorOrderV;
+            config.colorCameraColorOrder = (int)ColorOrderV;
             // Need it for color camera preview
             config.previewSizeHeight = 416;
             config.previewSizeWidth = 416;
-            
+
             // Mono camera
-            config.monoLCameraResolution = (int) monoResolution;
-            config.monoRCameraResolution = (int) monoResolution;
+            config.monoLCameraResolution = (int)monoResolution;
+            config.monoRCameraResolution = (int)monoResolution;
 
             // Depth
             // Need it for depth
@@ -118,15 +118,15 @@ namespace OAKForUnity
             config.depthAlign = 0; // RGB align
             config.subpixel = false;
             config.deviceId = device.deviceId;
-            config.deviceNum = (int) device.deviceNum;
+            config.deviceNum = (int)device.deviceNum;
             if (useIMU) config.freq = 400;
             if (retrieveSystemInformation) config.rate = 30.0f;
-            config.medianFilter = (int) medianFilter;
-            
+            config.medianFilter = (int)medianFilter;
+
             // Object NN model
             config.nnPath1 = _dataPath +
                              "/Plugins/OAKForUnity/Models/yolo-v4-tiny-tf_openvino_2021.4_6shave.blob";
-            
+
             // Plugin lib init pipeline implementation
             deviceRunning = InitObjectDetector(config);
 
@@ -145,7 +145,7 @@ namespace OAKForUnity
             if (!device.replayResults)
             {
                 // Plugin lib pipeline results implementation
-                objectDetectorResults = Marshal.PtrToStringAnsi(ObjectDetectorResults(out frameInfo, GETPreview, detectionScoreThreshold, UseDepth, retrieveSystemInformation, useIMU, (int) device.deviceNum));
+                objectDetectorResults = Marshal.PtrToStringAnsi(ObjectDetectorResults(out frameInfo, GETPreview, detectionScoreThreshold, UseDepth, retrieveSystemInformation, useIMU, (int)device.deviceNum));
             }
             // if replay read results from file
             else
@@ -179,11 +179,11 @@ namespace OAKForUnity
             }
 
             if (string.IsNullOrEmpty(objectDetectorResults)) return;
-            
+
             var obj = JSON.Parse(objectDetectorResults);
             int centerx = 0;
             int centery = 0;
-            
+
             if (obj != null)
             {
                 // record results
@@ -191,12 +191,12 @@ namespace OAKForUnity
                 {
                     List<Texture2D> textures = new List<Texture2D>()
                         {colorTexture};
-                    List<string> nameTextures = new List<string>() {"color"};
+                    List<string> nameTextures = new List<string>() { "color" };
 
                     device.Record(objectDetectorResults, textures, nameTextures);
                 }
 
-                float bestAppleScore = 10000000.0f;;
+                float bestAppleScore = 10000000.0f; ;
                 int bestAppleDepthx = 0;
                 int bestAppleDepthy = 0;
                 int bestAppleDepthz = 0;
@@ -206,32 +206,32 @@ namespace OAKForUnity
                     // look for person and apple
                     if (detection["label"] != "apple") continue;
                     if (!(detection["score"] < bestAppleScore)) continue;
-                    
+
                     bestAppleScore = detection["score"];
                     bestAppleDepthx = detection["X"];
                     bestAppleDepthy = detection["Y"];
                     bestAppleDepthz = detection["Z"];
                 }
 
-                if (bestAppleDepthx == 0 && bestAppleDepthy == 0 && bestAppleDepthz == 0) {}
+                if (bestAppleDepthx == 0 && bestAppleDepthy == 0 && bestAppleDepthz == 0) { }
                 else
                 {
                     // move apple object
                     // Normalize 3D position of object regarding the camera to the Unity scene depending your use case / design / needs
-                    apple.transform.localPosition = new Vector3((float)bestAppleDepthx/100.0f,(float)bestAppleDepthy/100.0f,(float)bestAppleDepthz/100.0f);
+                    apple.transform.localPosition = new Vector3((float)bestAppleDepthx / 100.0f, (float)bestAppleDepthy / 100.0f, (float)bestAppleDepthz / 100.0f);
                 }
-                
+
             }
-            
+
             if (!retrieveSystemInformation || obj == null) return;
-            
+
             float ddrUsed = obj["sysinfo"]["ddr_used"];
             float ddrTotal = obj["sysinfo"]["ddr_total"];
             float cmxUsed = obj["sysinfo"]["cmx_used"];
             float cmxTotal = obj["sysinfo"]["ddr_total"];
             float chipTempAvg = obj["sysinfo"]["chip_temp_avg"];
             float cpuUsage = obj["sysinfo"]["cpu_usage"];
-            systemInfo = "Device System Information\nddr used: "+ddrUsed+"MiB ddr total: "+ddrTotal+" MiB\n"+"cmx used: "+cmxUsed+" MiB cmx total: "+cmxTotal+" MiB\n"+"chip temp avg: "+chipTempAvg+"\n"+"cpu usage: "+cpuUsage+" %";
+            systemInfo = "Device System Information\nddr used: " + ddrUsed + "MiB ddr total: " + ddrTotal + " MiB\n" + "cmx used: " + cmxUsed + " MiB cmx total: " + cmxTotal + " MiB\n" + "chip temp avg: " + chipTempAvg + "\n" + "cpu usage: " + cpuUsage + " %";
         }
     }
 }

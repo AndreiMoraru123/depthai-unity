@@ -39,7 +39,7 @@ cv::Scalar ColorForLandmark(int landm)
     if (landm % 2 == 1) color = cv::Scalar(0,255,0);
     else if (landm == 0) color = cv::Scalar(0,255,255);
     else color = cv::Scalar(0,0,255);
-    
+
     return color;
 }
 
@@ -50,17 +50,17 @@ void SetCameraPreviewSize(std::shared_ptr<dai::node::ColorCamera> colorCam, Pipe
 {
     int resx = 1920;
     int resy = 1080;
-    if (config->colorCameraResolution == 1) 
+    if (config->colorCameraResolution == 1)
     {
         resx = 3840;
         resy = 2160;
     }
-    if (config->colorCameraResolution == 2) 
+    if (config->colorCameraResolution == 2)
     {
         resx = 4056;
         resy = 3040;
     }
-    if (config->colorCameraResolution == 3) 
+    if (config->colorCameraResolution == 3)
     {
         resx = 4208;
         resy = 3120;
@@ -77,19 +77,19 @@ void SetCameraPreviewSize(std::shared_ptr<dai::node::ColorCamera> colorCam, Pipe
 /**
 * Pipeline creation based on streams template
 *
-* @param config pipeline configuration 
-* @returns pipeline 
+* @param config pipeline configuration
+* @returns pipeline
 */
 
 dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
 {
     dai::Pipeline pipeline;
     std::shared_ptr<dai::node::XLinkOut> xlinkOut;
-    
+
     auto colorCam = pipeline.create<dai::node::ColorCamera>();
 
     // Color camera preview
-    if (config->previewSizeWidth > 0 && config->previewSizeHeight > 0) 
+    if (config->previewSizeWidth > 0 && config->previewSizeHeight > 0)
     {
         xlinkOut = pipeline.create<dai::node::XLinkOut>();
         xlinkOut->setStreamName("preview");
@@ -100,14 +100,14 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
         {
             SetCameraPreviewSize(colorCam,config);
         }
-        else 
+        else
         {
             colorCam->setPreviewSize(config->previewSizeWidth, config->previewSizeHeight);
             colorCam->preview.link(xlinkOut->input);
         }
     }
 
-    // Color camera properties            
+    // Color camera properties
     colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
     if (config->colorCameraResolution == 1) colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_4_K);
     if (config->colorCameraResolution == 2) colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_12_MP);
@@ -127,7 +127,7 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
         auto manip1 = pipeline.create<dai::node::ImageManip>();
         manip1->initialConfig.setResizeThumbnail(192,192);
         colorCam->preview.link(manip1->inputImage);
-    
+
         manip1->out.link(nn1->input);
         //manip1->out.link(xlinkOut->input);
         nn1->passthrough.link(xlinkOut->input);
@@ -136,9 +136,9 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
 
     // output of neural network
     auto nnOut = pipeline.create<dai::node::XLinkOut>();
-    nnOut->setStreamName("detections");    
+    nnOut->setStreamName("detections");
     nn1->out.link(nnOut->input);
-    
+
     // Depth
     if (config->confidenceThreshold > 0)
     {
@@ -150,7 +150,7 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
         if (config->ispScaleF1 > 0 && config->ispScaleF2 > 0) colorCam->setIspScale(config->ispScaleF1, config->ispScaleF2);
         if (config->manualFocus > 0) colorCam->initialControl.setManualFocus(config->manualFocus);
 
-        // Mono camera properties    
+        // Mono camera properties
         left->setResolution(dai::MonoCameraProperties::SensorResolution::THE_400_P);
         if (config->monoLCameraResolution == 1) left->setResolution(dai::MonoCameraProperties::SensorResolution::THE_720_P);
         if (config->monoLCameraResolution == 2) left->setResolution(dai::MonoCameraProperties::SensorResolution::THE_800_P);
@@ -168,7 +168,7 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
         stereo->setLeftRightCheck(config->leftRightCheck);
         if (config->depthAlign > 0) stereo->setDepthAlign(dai::CameraBoardSocket::RGB);
         stereo->setSubpixel(config->subpixel);
-        
+
         stereo->initialConfig.setMedianFilter(dai::MedianFilter::MEDIAN_OFF);
         if (config->medianFilter == 1) stereo->initialConfig.setMedianFilter(dai::MedianFilter::KERNEL_3x3);
         if (config->medianFilter == 2) stereo->initialConfig.setMedianFilter(dai::MedianFilter::KERNEL_5x5);
@@ -179,10 +179,10 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
         // Linking
         left->out.link(stereo->left);
         right->out.link(stereo->right);
-        auto xoutDepth = pipeline.create<dai::node::XLinkOut>();            
+        auto xoutDepth = pipeline.create<dai::node::XLinkOut>();
         xoutDepth->setStreamName("depth");
         stereo->depth.link(xoutDepth->input);
-        
+
         if (config->useSpatialLocator)
         {
             // Spatial Locator
@@ -201,7 +201,7 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
             auto calculationAlgorithm = dai::SpatialLocationCalculatorAlgorithm::MEDIAN;
             sconfig.calculationAlgorithm = calculationAlgorithm;
             sconfig.roi = dai::Rect(topLeft, bottomRight);
-            
+
             spatialDataCalculator->inputConfig.setWaitForMessage(false);
 
             spatialDataCalculator->passthroughDepth.link(xoutDepth->input);
@@ -249,7 +249,7 @@ dai::Pipeline createBodyPosePipeline(PipelineConfig *config)
         imu->out.link(xlinkOutImu->input);
     }
 
-    return pipeline;    
+    return pipeline;
 }
 
 extern "C"
@@ -257,19 +257,19 @@ extern "C"
    /**
     * Pipeline creation based on streams template
     *
-    * @param config pipeline configuration 
-    * @returns pipeline 
+    * @param config pipeline configuration
+    * @returns pipeline
     */
     EXPORT_API bool InitBodyPose(PipelineConfig *config)
     {
         dai::Pipeline pipeline = createBodyPosePipeline(config);
-       
+
        // If deviceId is empty .. just pick first available device
         bool res = false;
 
-        if (strcmp(config->deviceId,"NONE")==0 || strcmp(config->deviceId,"")==0) res = DAIStartPipeline(pipeline,config->deviceNum,NULL);        
+        if (strcmp(config->deviceId,"NONE")==0 || strcmp(config->deviceId,"")==0) res = DAIStartPipeline(pipeline,config->deviceNum,NULL);
         else res = DAIStartPipeline(pipeline,config->deviceNum,config->deviceId);
-        
+
         return res;
     }
 
@@ -284,9 +284,9 @@ extern "C"
     * @param retrieveInformation True if system information is requested, False otherwise. Requires rate in pipeline creation.
     * @param useIMU True if IMU information is requested, False otherwise. Requires freq in pipeline creation.
     * @param deviceNum Device selection on unity dropdown
-    * @returns Json with results or information about device availability. 
-    */    
-    
+    * @returns Json with results or information about device availability.
+    */
+
     EXPORT_API const char* BodyPoseResults(FrameInfo *frameInfo, bool getPreview, int width, int height, bool useDepth, bool drawBodyPoseInPreview, float bodyLandmarkScoreThreshold, bool retrieveInformation, bool useIMU, bool useSpatialLocator, int deviceNum)
     {
         using namespace std;
@@ -295,7 +295,7 @@ extern "C"
         // Get device deviceNum
         std::shared_ptr<dai::Device> device = GetDevice(deviceNum);
         // Device no available
-        if (device == NULL) 
+        if (device == NULL)
         {
             char* ret = (char*)::malloc(strlen("{\"error\":\"NO_DEVICE\"}"));
             ::memcpy(ret, "{\"error\":\"NO_DEVICE\"}",strlen("{\"error\":\"NO_DEVICE\"}"));
@@ -308,7 +308,7 @@ extern "C"
         {
             cv::Mat frame;
             cv::Mat depthFrame, depthFrameOrig;
-            
+
             std::shared_ptr<dai::ImgFrame> imgFrame;
 
             auto startTime = steady_clock::now();
@@ -327,11 +327,11 @@ extern "C"
             std::shared_ptr<dai::DataOutputQueue> depthQueue;
 
              if (getPreview) preview = device->getOutputQueue("preview",1,false);
-            
+
             auto detections = device->getOutputQueue("detections",1,false);
-            
+
             if (useDepth) depthQueue = device->getOutputQueue("depth", 1, false);
-            
+
             if (getPreview)
             {
                 auto imgFrames = preview->tryGetAll<dai::ImgFrame>();
@@ -343,7 +343,7 @@ extern "C"
                     }
                 }
             }
-        
+
             struct Detection {
                 unsigned int label;
                 float score;
@@ -357,8 +357,8 @@ extern "C"
 
             auto det = detections->get<dai::NNData>();
             std::vector<float> detData = det->getLayerFp16("Identity");
-            
-            int landmarks_y[17]; 
+
+            int landmarks_y[17];
             int landmarks_x[17];
             int landmarks_xpos[17];
             int landmarks_ypos[17];
@@ -372,7 +372,7 @@ extern "C"
             std::shared_ptr<dai::DataInputQueue> spatialCalcConfigInQueue;
 
             if (useDepth)
-            {            
+            {
                 if (useSpatialLocator)
                 {
                     spatialCalcQueue = device->getOutputQueue("spatialData", 1, false);
@@ -398,7 +398,7 @@ extern "C"
                 int pos = 0;
 
                 int frameSize = pad;
-                
+
                 for (int i=0; i<(int)detData.size(); i+=3)
                 {
                     landmarks_y[pos] = (int) (detData[i] * frameSize);//frame.rows);
@@ -417,14 +417,14 @@ extern "C"
 
                 std::vector<int> pushed;
 
-                
-                if (useDepth && pos>0 && useSpatialLocator) 
+
+                if (useDepth && pos>0 && useSpatialLocator)
                 {
                     spatialCalcConfigInQueue->send(cfg);
-                
+
                     // get spatial
                     auto spatialData = spatialCalcQueue->get<dai::SpatialLocationCalculatorData>()->getSpatialLocations();
-                
+
                     int i = 0;
                     for(auto depthData : spatialData) {
                         landmarks_xpos[i] = (int)depthData.spatialCoordinates.x;
@@ -447,11 +447,11 @@ extern "C"
                             cv::circle(frame, point2, 4, ColorForLandmark(LINES_BODY[i][1]), -11);
                         }
 
-                        if (std::find(pushed.begin(), pushed.end(), LINES_BODY[i][0]) == pushed.end()) 
+                        if (std::find(pushed.begin(), pushed.end(), LINES_BODY[i][0]) == pushed.end())
                         {
                             nlohmann::json landmarkJson = {};
                             pushed.push_back(LINES_BODY[i][0]);
-                            
+
                             landmarkJson["index"] = LINES_BODY[i][0];
                             landmarkJson["xpos"] = landmarks_x[LINES_BODY[i][0]];
                             landmarkJson["ypos"] = landmarks_y[LINES_BODY[i][0]];
@@ -467,11 +467,11 @@ extern "C"
                                 else
                                 {
                                     auto spatialData = computeDepth(landmarks_x[LINES_BODY[i][0]],landmarks_y[LINES_BODY[i][0]],frame.rows,depthFrameOrig);
-                                    /*auto depthData = spatialData[LINES_BODY[i][0]]; 
+                                    /*auto depthData = spatialData[LINES_BODY[i][0]];
                                     auto roi = depthData.config.roi;
                                     roi = roi.denormalize(depthFrame.cols, depthFrame.rows);*/
-                                    
-                                    for(auto depthData : spatialData) 
+
+                                    for(auto depthData : spatialData)
                                     {
                                         auto roi = depthData.config.roi;
                                         roi = roi.denormalize(depthFrame.cols, depthFrame.rows);
@@ -489,7 +489,7 @@ extern "C"
                             bodyPose.push_back(landmarkJson);
                         }
 
-                        if (std::find(pushed.begin(), pushed.end(), LINES_BODY[i][1]) == pushed.end()) 
+                        if (std::find(pushed.begin(), pushed.end(), LINES_BODY[i][1]) == pushed.end())
                         {
                             nlohmann::json landmarkJson = {};
                             pushed.push_back(LINES_BODY[i][1]);
@@ -507,12 +507,12 @@ extern "C"
                                 }
                                 else
                                 {
-                                    auto spatialData = computeDepth(landmarks_x[LINES_BODY[i][1]],landmarks_y[LINES_BODY[i][1]],frame.rows,depthFrameOrig); 
-                                    /*auto depthData = spatialData[LINES_BODY[i][1]]; 
+                                    auto spatialData = computeDepth(landmarks_x[LINES_BODY[i][1]],landmarks_y[LINES_BODY[i][1]],frame.rows,depthFrameOrig);
+                                    /*auto depthData = spatialData[LINES_BODY[i][1]];
                                     auto roi = depthData.config.roi;
                                     roi = roi.denormalize(depthFrame.cols, depthFrame.rows);*/
 
-                                    for(auto depthData : spatialData) 
+                                    for(auto depthData : spatialData)
                                     {
                                         auto roi = depthData.config.roi;
                                         roi = roi.denormalize(depthFrame.cols, depthFrame.rows);
@@ -524,16 +524,16 @@ extern "C"
                                         landmarkJson["location.y"] = landmarks_ypos[LINES_BODY[i][1]];
                                         landmarkJson["location.z"] = landmarks_zpos[LINES_BODY[i][1]];
                                     }
-                                }                                
+                                }
                             }
                             bodyPose.push_back(landmarkJson);
                         }
                     }
-                    
+
                 }
                 bodyPoseJson["landmarks"] = bodyPose;
             }
-            
+
             // Get Preview image
             if (getPreview && frame.cols>0 && frame.rows>0)
             {
@@ -544,7 +544,7 @@ extern "C"
             }
 
             // SYSTEM INFORMATION
-            if (retrieveInformation) bodyPoseJson["sysinfo"] = GetDeviceInfo(device);//infoJson;        
+            if (retrieveInformation) bodyPoseJson["sysinfo"] = GetDeviceInfo(device);//infoJson;
             if (useIMU) bodyPoseJson["imu"] = GetIMU(device);
 
             // RETURN JSON

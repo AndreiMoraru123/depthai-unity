@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using System.Collections.Generic;
 using SimpleJSON;
+using System.Data;
 
 namespace OAKForUnity
 {
@@ -18,8 +19,8 @@ namespace OAKForUnity
         /*
         * Pipeline creation based on streams template
         *
-        * @param config pipeline configuration 
-        * @returns pipeline 
+        * @param config pipeline configuration
+        * @returns pipeline
         */
         private static extern bool InitFaceDetector(in PipelineConfig config);
 
@@ -36,42 +37,74 @@ namespace OAKForUnity
         * @param retrieveInformation True if system information is requested, False otherwise. Requires rate in pipeline creation.
         * @param useIMU True if IMU information is requested, False otherwise. Requires freq in pipeline creation.
         * @param deviceNum Device selection on unity dropdown
-        * @returns Json with results or information about device availability. 
-        */    
+        * @returns Json with results or information about device availability.
+        */
         private static extern IntPtr FaceDetectorResults(out FrameInfo frameInfo, bool getPreview, bool drawBestFaceInPreview, bool drawAllFacesInPreview, float faceScoreThreshold, bool useDepth, bool retrieveInformation, bool useIMU, int deviceNum);
 
-        
+        //Lets make our calls from the Plugin
+        [DllImport("depthai-unity", CallingConvention = CallingConvention.Cdecl)]
+        /*
+        * Pipeline creation based on streams template
+        *
+        * @param config pipeline configuration 
+        * @returns pipeline 
+        */
+        private static extern bool InitHeadPose(in PipelineConfig config);
+
+        [DllImport("depthai-unity", CallingConvention = CallingConvention.Cdecl)]
+        /*
+        * Pipeline results
+        *
+        * @param frameInfo camera images pointers
+        * @param getPreview True if color preview image is requested, False otherwise. Requires previewSize in pipeline creation.
+        * @param drawBestFaceInPreview True to draw face rectangle in the preview image
+        * @param drawAllFacesInPreview True to draw all detected faces in the preview image
+        * @param faceScoreThreshold Normalized score to filter face detections
+        * @param useDepth True if depth information is requested, False otherwise. Requires confidenceThreshold in pipeline creation.
+        * @param retrieveInformation True if system information is requested, False otherwise. Requires rate in pipeline creation.
+        * @param useIMU True if IMU information is requested, False otherwise. Requires freq in pipeline creation.
+        * @param deviceNum Device selection on unity dropdown
+        * @returns Json with results or information about device availability. 
+        */
+        private static extern IntPtr HeadPoseResults(out FrameInfo frameInfo, bool getPreview, int width, int height, bool drawBestFaceInPreview, bool drawAllFacesInPreview, float faceScoreThreshold, bool useDepth, bool retrieveInformation, bool useIMU, int deviceNum);
+
+
         // Editor attributes
-        [Header("RGB Camera")] 
+        [Header("RGB Camera")]
         public float cameraFPS = 30;
         public RGBResolution rgbResolution;
         private const bool Interleaved = false;
         private const ColorOrder ColorOrderV = ColorOrder.BGR;
 
-        [Header("Mono Cameras")] 
+        [Header("Mono Cameras")]
         public MonoResolution monoResolution;
 
-        [Header("Face Detector Configuration")] 
+        [Header("Face Detector Configuration")]
         public MedianFilter medianFilter;
         public bool useIMU = false;
         public bool retrieveSystemInformation = false;
         public bool drawBestFaceInPreview;
         public bool drawAllFacesInPreview;
-        public float faceScoreThreshold; 
+        public float faceScoreThreshold;
+        public float detectionScoreThreshold;
         private const bool GETPreview = true;
         private const bool UseDepth = true;
 
-        [Header("Face Detector Results")] 
+        [Header("Face Detector Results")]
         public Texture2D colorTexture;
         public string faceDetectorResults;
+        public string headPoseResults;
         public string systemInfo;
 
         [Header("Cube Character")] public GameObject cubeCharacter;
-        
+
         // private attributes
         private Color32[] _colorPixel32;
         private GCHandle _colorPixelHandle;
         private IntPtr _colorPixelPtr;
+        private float oldHeadPoseYaw;
+        private float oldHeadPoseRoll;
+        private float oldHeadPosePitch;
 
         // Init textures. Each PredefinedBase implementation handles textures. Decoupled from external viz (Canvas, VFX, ...)
         void InitTexture()
@@ -87,9 +120,13 @@ namespace OAKForUnity
         // Start. Init textures and frameInfo
         void Start()
         {
+            oldHeadPoseYaw = 0.0f;
+            oldHeadPoseRoll = 0.0f;
+            oldHeadPosePitch = 0.0f;
+
             // Init dataPath to load face detector NN model
             _dataPath = Application.dataPath;
-            
+
             InitTexture();
 
             // Init FrameInfo. Only need it in case memcpy data ptr on plugin lib.
@@ -101,22 +138,21 @@ namespace OAKForUnity
         {
             // Color camera
             config.colorCameraFPS = cameraFPS;
-            config.colorCameraResolution = (int) rgbResolution;
+            config.colorCameraResolution = (int)rgbResolution;
             config.colorCameraInterleaved = Interleaved;
-            config.colorCameraColorOrder = (int) ColorOrderV;
+            config.colorCameraColorOrder = (int)ColorOrderV;
             // Need it for color camera preview
             config.previewSizeHeight = 300;
             config.previewSizeWidth = 300;
-            
+
             // Mono camera
-            config.monoLCameraResolution = (int) monoResolution;
-            config.monoRCameraResolution = (int) monoResolution;
+            config.monoLCameraResolution = (int)monoResolution;
+            config.monoRCameraResolution = (int)monoResolution;
 
             // Depth
             // Need it for depth
             config.confidenceThreshold = 230;
             config.leftRightCheck = true;
-
             if (rgbResolution == RGBResolution.THE_800_P)
             {
                 config.ispScaleF1 = 1;
@@ -127,27 +163,29 @@ namespace OAKForUnity
                 config.ispScaleF1 = 2;
                 config.ispScaleF2 = 3;
             }
-
             config.manualFocus = 130;
-            config.depthAlign = 1; // RGB align
+            //config.depthAlign = 1; // RGB align
             config.subpixel = false;
             config.deviceId = device.deviceId;
-            config.deviceNum = (int) device.deviceNum;
+            config.deviceNum = (int)device.deviceNum;
             if (useIMU) config.freq = 400;
             if (retrieveSystemInformation) config.rate = 30.0f;
-            config.medianFilter = (int) medianFilter;
-            
-            // Face NN model
+            config.medianFilter = (int)medianFilter;
+
+            // 2-stage NN model
             config.nnPath1 = _dataPath +
                              "/Plugins/OAKForUnity/Models/face-detection-retail-0004_openvino_2021.2_4shave.blob";
-            
+
+            config.nnPath2 = _dataPath +
+                             "/Plugins/OAKForUnity/Models/head-pose-estimation-adas-0001_openvino_2021.2_4shave.blob";
+
             // Plugin lib init pipeline implementation
-            deviceRunning = InitFaceDetector(config);
+            deviceRunning = InitHeadPose(config);
 
             // Check if was possible to init device with pipeline. Base class handles replay data if possible.
             if (!deviceRunning)
                 Debug.LogError(
-                    "Was not possible to initialize Face Detector. Check you have available devices on OAK For Unity -> Device Manager and check you setup correct deviceId if you setup one.");
+                    "Was not possible to initialize Head Pose. Check you have available devices on OAK For Unity -> Device Manager and check you setup correct deviceId if you setup one.");
 
             return deviceRunning;
         }
@@ -159,9 +197,13 @@ namespace OAKForUnity
             if (!device.replayResults)
             {
                 // Plugin lib pipeline results implementation
-                faceDetectorResults = Marshal.PtrToStringAnsi(FaceDetectorResults(out frameInfo, GETPreview, drawBestFaceInPreview, drawAllFacesInPreview, faceScoreThreshold, UseDepth, retrieveSystemInformation,
+                // faceDetectorResults = Marshal.PtrToStringAnsi(FaceDetectorResults(out frameInfo, GETPreview, drawBestFaceInPreview, drawAllFacesInPreview, faceScoreThreshold, UseDepth, retrieveSystemInformation,
+                //     useIMU,
+                //     (int)device.deviceNum));
+
+                headPoseResults = Marshal.PtrToStringAnsi(HeadPoseResults(out frameInfo, GETPreview, 300, 300, drawBestFaceInPreview, drawAllFacesInPreview, faceScoreThreshold, UseDepth, retrieveSystemInformation,
                     useIMU,
-                    (int) device.deviceNum));
+                    (int)device.deviceNum));
             }
             // if replay read results from file
             else
@@ -194,21 +236,23 @@ namespace OAKForUnity
                 }
             }
 
-            if (string.IsNullOrEmpty(faceDetectorResults)) return;
+            if (string.IsNullOrEmpty(headPoseResults)) return;
 
             // EXAMPLE HOW TO PARSE INFO
             // Example JSON results from Face detection returned by the plugin
             // { "faces": [ {"label":0,"score":0.0,"xmin":0.0,"ymin":0.0,"xmax":0.0,"ymax":0.0,"xcenter":0.0,"ycenter":0.0},{"label":1,"score":1.0,"xmin":0.0,"ymin":0.0,"xmax":0.0,* "ymax":0.0,"xcenter":0.0,"ycenter":0.0}],"best":{"label":1,"score":1.0,"xmin":0.0,"ymin":0.0,"xmax":0.0,"ymax":0.0,"xcenter":0.0,"ycenter":0.0},"fps":0.0}
-            
-            var obj = JSON.Parse(faceDetectorResults);
-            int centerx = 0;
-            int centery = 0;
+            // EXAMPLE HOW TO PARSE INFO
+
+            var obj = JSON.Parse(headPoseResults);
+            int centerX = 0;
+            int centerY = 0;
+
             if (obj != null)
             {
-                centerx = obj["best"]["xcenter"];
-                centery = obj["best"]["ycenter"];
+                centerX = obj["best"]["xcenter"];
+                centerY = obj["best"]["ycenter"];
             }
-            if (centerx == 0 && centery == 0) {}
+            if (centerX == 0 && centerY == 0) { }
             else
             {
                 // record results
@@ -216,36 +260,91 @@ namespace OAKForUnity
                 {
                     List<Texture2D> textures = new List<Texture2D>()
                         {colorTexture};
-                    List<string> nameTextures = new List<string>() {"color"};
+                    List<string> nameTextures = new List<string>() { "color" };
 
-                    device.Record(faceDetectorResults, textures, nameTextures);
+                    device.Record(headPoseResults, textures, nameTextures);
                 }
-                
-                if (UseDepth)
+
+                // PROCESS HEAD POSE RESULTS
+                float headPoseYaw = obj["headPoses"][0]["yaw"];
+                float headPoseRoll = obj["headPoses"][0]["roll"];
+                float headPosePitch = obj["headPoses"][0]["pitch"];
+
+
+                if (headPoseYaw != 0 && headPosePitch != 0 && headPoseRoll != 0)
                 {
-                    int depthx = obj["best"]["X"];
-                    int depthy = obj["best"]["Y"];
-                    int depthz = obj["best"]["Z"];
-                    if (depthx == 0 && depthy == 0 && depthz == 0) {}
+                    cubeCharacter.transform.Rotate(headPosePitch - oldHeadPosePitch, -(headPoseYaw - oldHeadPoseYaw), headPoseRoll - oldHeadPoseRoll, Space.Self);
+                    // cubeCharacter.transform.Rotate(0f, -(headPoseYaw - oldHeadPoseYaw) * 1.5f, 0f, Space.Self);
+
+                    if (false) // UseDepth
+                    {
+                        int depthx = obj["best"]["X"];
+                        int depthy = obj["best"]["Y"];
+                        int depthz = obj["best"]["Z"];
+                        if (depthx == 0 && depthy == 0 && depthz == 0) { Debug.Log("No depth :("); }
+                        else
+                        {
+                            // move cube character
+                            // Normalize 3D position of face regarding the camera to the Unity scene depending your use case / design / needs
+                            cubeCharacter.transform.position = new Vector3(depthx / 100.0f, depthy / 100.0f, depthz / 100.0f);
+                        }
+                    }
                     else
                     {
-                        // move cube character
-                        // Normalize 3D position of face regarding the camera to the Unity scene depending your use case / design / needs
-                        cubeCharacter.transform.localPosition = new Vector3((float)depthx/100.0f,(float)depthy/100.0f,(float)depthz/100.0f);
+                        cubeCharacter.transform.localPosition = new Vector3((150 - centerX) / 100.0f, -(centerY - 150) / 100.0f, cubeCharacter.transform.localPosition.z);
                     }
+                    oldHeadPoseRoll = headPoseRoll;
+                    oldHeadPoseYaw = headPoseYaw;
+                    oldHeadPosePitch = headPosePitch;
                 }
-                else cubeCharacter.transform.localPosition = new Vector3((float)(150-centerx)/100.0f,(float)-(centery-150)/100.0f,cubeCharacter.transform.localPosition.z);
             }
-            
+
+            // var obj = JSON.Parse(faceDetectorResults);
+            // int centerx = 0;
+            // int centery = 0;
+            // if (obj != null)
+            // {
+            //     centerx = obj["best"]["xcenter"];
+            //     centery = obj["best"]["ycenter"];
+            // }
+            // if (centerx == 0 && centery == 0) { }
+            // else
+            // {
+            //     // record results
+            //     if (device.recordResults)
+            //     {
+            //         List<Texture2D> textures = new List<Texture2D>()
+            //             {colorTexture};
+            //         List<string> nameTextures = new List<string>() { "color" };
+
+            //         device.Record(faceDetectorResults, textures, nameTextures);
+            //     }
+
+            //     if (UseDepth)
+            //     {
+            //         int depthx = obj["best"]["X"];
+            //         int depthy = obj["best"]["Y"];
+            //         int depthz = obj["best"]["Z"];
+            //         if (depthx == 0 && depthy == 0 && depthz == 0) { }
+            //         else
+            //         {
+            //             // move cube character
+            //             // Normalize 3D position of face regarding the camera to the Unity scene depending your use case / design / needs
+            //             cubeCharacter.transform.localPosition = new Vector3((float)depthx / 100.0f, (float)depthy / 100.0f, (float)depthz / 100.0f);
+            //         }
+            //     }
+            //     else cubeCharacter.transform.localPosition = new Vector3((float)(150 - centerx) / 100.0f, (float)-(centery - 150) / 100.0f, cubeCharacter.transform.localPosition.z);
+            // }
+
             if (!retrieveSystemInformation || obj == null) return;
-            
+
             float ddrUsed = obj["sysinfo"]["ddr_used"];
             float ddrTotal = obj["sysinfo"]["ddr_total"];
             float cmxUsed = obj["sysinfo"]["cmx_used"];
             float cmxTotal = obj["sysinfo"]["ddr_total"];
             float chipTempAvg = obj["sysinfo"]["chip_temp_avg"];
             float cpuUsage = obj["sysinfo"]["cpu_usage"];
-            systemInfo = "Device System Information\nddr used: "+ddrUsed+"MiB ddr total: "+ddrTotal+" MiB\n"+"cmx used: "+cmxUsed+" MiB cmx total: "+cmxTotal+" MiB\n"+"chip temp avg: "+chipTempAvg+"\n"+"cpu usage: "+cpuUsage+" %";
+            systemInfo = "Device System Information\nddr used: " + ddrUsed + "MiB ddr total: " + ddrTotal + " MiB\n" + "cmx used: " + cmxUsed + " MiB cmx total: " + cmxTotal + " MiB\n" + "chip temp avg: " + chipTempAvg + "\n" + "cpu usage: " + cpuUsage + " %";
         }
     }
 }

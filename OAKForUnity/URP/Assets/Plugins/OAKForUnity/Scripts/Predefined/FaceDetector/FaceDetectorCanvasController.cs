@@ -12,14 +12,14 @@ namespace OAKForUnity
     public class FaceDetectorCanvasController : MonoBehaviour
     {
         // public attributes
-        
+
         // Pipeline for texture binding
         public DaiFaceDetector pipeline;
-        
-        [Header("UI Binding")] 
+
+        [Header("UI Binding")]
         public Image colorCameraImage;
         public TMPro.TextMeshProUGUI faceResults;
-        
+
         private bool _init = false;
 
         // Start is called before the first frame update

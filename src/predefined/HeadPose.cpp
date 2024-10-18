@@ -1,3 +1,4 @@
+
 /**
 * This file contains face emotion pipeline and interface for Unity scene called "Face Emotion"
 * Main goal is to perform face emotion + depth
@@ -32,30 +33,63 @@
 
 #include "nlohmann/json.hpp"
 
+dai::SpatialLocationCalculatorConfigData dconfig;
 /**
 * Pipeline creation based on streams template
 *
-* @param config pipeline configuration 
-* @returns pipeline 
+* @param config pipeline configuration
+* @returns pipeline
 */
 dai::Pipeline createHeadPosePipeline(PipelineConfig *config)
 {
-    
     dai::Pipeline pipeline;
     std::shared_ptr<dai::node::XLinkOut> xlinkOut;
-    
+
     auto colorCam = pipeline.create<dai::node::ColorCamera>();
 
     // Color camera preview
-    if (config->previewSizeWidth > 0 && config->previewSizeHeight > 0) 
+    if (config->previewSizeWidth > 0 && config->previewSizeHeight > 0)
     {
         xlinkOut = pipeline.create<dai::node::XLinkOut>();
         xlinkOut->setStreamName("preview");
-        colorCam->setPreviewSize(config->previewSizeWidth, config->previewSizeHeight);
-        colorCam->preview.link(xlinkOut->input);
+
+        // stretch
+        //colorCam->setPreviewKeepAspectRatio(false);
+
+        // normal crop <- @todo: add parameter in unity
+        // not for letterbox <- compute on Unity
+        //colorCam->setPreviewSize(config->previewSizeWidth, config->previewSizeHeight);
+        //colorCam->preview.link(xlinkOut->input);
+
+        // letterbox
+        // compute resolution with ipscale
+        int resx = 1920;
+        int resy = 1080;
+        if (config->colorCameraResolution == 1)
+        {
+            resx = 3840;
+            resy = 2160;
+        }
+        if (config->colorCameraResolution == 2)
+        {
+            resx = 4056;
+            resy = 3040;
+        }
+        if (config->colorCameraResolution == 3)
+        {
+            resx = 4208;
+            resy = 3120;
+        }
+
+        if (config->ispScaleF1 > 0 && config->ispScaleF2 > 0)
+        {
+            resx = resx * ((float)config->ispScaleF1/(float)config->ispScaleF2);
+            resy = resy * ((float)config->ispScaleF1/(float)config->ispScaleF2);
+        }
+        colorCam->setPreviewSize(resx,resy);
     }
-    
-    // Color camera properties            
+
+    // Color camera properties
     colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
     if (config->colorCameraResolution == 1) colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_4_K);
     if (config->colorCameraResolution == 2) colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_12_MP);
@@ -65,30 +99,39 @@ dai::Pipeline createHeadPosePipeline(PipelineConfig *config)
     if (config->colorCameraColorOrder == 1) colorCam->setColorOrder(dai::ColorCameraProperties::ColorOrder::RGB);
     colorCam->setFps(config->colorCameraFPS);
 
+    // letterbox
+    auto manip1 = pipeline.create<dai::node::ImageManip>();
+    manip1->initialConfig.setResizeThumbnail(300,300);
+    colorCam->preview.link(manip1->inputImage);
+
     // neural network
     auto nn1 = pipeline.create<dai::node::NeuralNetwork>();
     nn1->setBlobPath(config->nnPath1);
-    colorCam->preview.link(nn1->input);
+
+    // not for letterbox
+    manip1->out.link(nn1->input);
+    manip1->out.link(xlinkOut->input);
+    //colorCam->preview.link(nn1->input);
 
     // output of neural network
     auto nnOut = pipeline.create<dai::node::XLinkOut>();
-    nnOut->setStreamName("detections");    
+    nnOut->setStreamName("detections");
     nn1->out.link(nnOut->input);
-   
+
 
     auto xlinkIn = pipeline.create<dai::node::XLinkIn>();
-    xlinkIn->setStreamName("landm_in");    
+    xlinkIn->setStreamName("landm_in");
 
     auto nn2 = pipeline.create<dai::node::NeuralNetwork>();
     nn2->setBlobPath(config->nnPath2);
     xlinkIn->out.link(nn2->input);
 
     auto nnOut2 = pipeline.create<dai::node::XLinkOut>();
-    nnOut2->setStreamName("landm_out");    
+    nnOut2->setStreamName("landm_out");
     nn2->out.link(nnOut2->input);
 
     // Depth
-    /*if (config->confidenceThreshold > 0)
+    if (config->confidenceThreshold > 0)
     {
         auto left = pipeline.create<dai::node::MonoCamera>();
         auto right = pipeline.create<dai::node::MonoCamera>();
@@ -98,7 +141,7 @@ dai::Pipeline createHeadPosePipeline(PipelineConfig *config)
         if (config->ispScaleF1 > 0 && config->ispScaleF2 > 0) colorCam->setIspScale(config->ispScaleF1, config->ispScaleF2);
         if (config->manualFocus > 0) colorCam->initialControl.setManualFocus(config->manualFocus);
 
-        // Mono camera properties    
+        // Mono camera properties
         left->setResolution(dai::MonoCameraProperties::SensorResolution::THE_400_P);
         if (config->monoLCameraResolution == 1) left->setResolution(dai::MonoCameraProperties::SensorResolution::THE_720_P);
         if (config->monoLCameraResolution == 2) left->setResolution(dai::MonoCameraProperties::SensorResolution::THE_800_P);
@@ -116,19 +159,49 @@ dai::Pipeline createHeadPosePipeline(PipelineConfig *config)
         stereo->setLeftRightCheck(config->leftRightCheck);
         if (config->depthAlign > 0) stereo->setDepthAlign(dai::CameraBoardSocket::RGB);
         stereo->setSubpixel(config->subpixel);
-        
+
         stereo->initialConfig.setMedianFilter(dai::MedianFilter::MEDIAN_OFF);
         if (config->medianFilter == 1) stereo->initialConfig.setMedianFilter(dai::MedianFilter::KERNEL_3x3);
         if (config->medianFilter == 2) stereo->initialConfig.setMedianFilter(dai::MedianFilter::KERNEL_5x5);
         if (config->medianFilter == 3) stereo->initialConfig.setMedianFilter(dai::MedianFilter::KERNEL_7x7);
 
+        stereo->setDefaultProfilePreset(dai::node::StereoDepth::PresetMode::HIGH_DENSITY);
+
+        // Spatial Locator
+        auto spatialDataCalculator = pipeline.create<dai::node::SpatialLocationCalculator>();
+        auto xoutSpatialData = pipeline.create<dai::node::XLinkOut>();
+        auto xinSpatialCalcConfig = pipeline.create<dai::node::XLinkIn>();
+
+        xoutSpatialData->setStreamName("spatialData");
+        xinSpatialCalcConfig->setStreamName("spatialCalcConfig");
+
+
+        dai::Point2f topLeft(0.4f, 0.4f);
+        dai::Point2f bottomRight(0.6f, 0.6f);
+
+        dconfig.depthThresholds.lowerThreshold = 100;
+        dconfig.depthThresholds.upperThreshold = 10000;
+        auto calculationAlgorithm = dai::SpatialLocationCalculatorAlgorithm::MEDIAN;
+        dconfig.calculationAlgorithm = calculationAlgorithm;
+        dconfig.roi = dai::Rect(topLeft, bottomRight);
+
+        spatialDataCalculator->inputConfig.setWaitForMessage(false);
+
         // Linking
         left->out.link(stereo->left);
         right->out.link(stereo->right);
-        auto xoutDepth = pipeline.create<dai::node::XLinkOut>();            
+        auto xoutDepth = pipeline.create<dai::node::XLinkOut>();
         xoutDepth->setStreamName("depth");
         stereo->depth.link(xoutDepth->input);
-    }*/
+
+
+        spatialDataCalculator->passthroughDepth.link(xoutDepth->input);
+        stereo->depth.link(spatialDataCalculator->inputDepth);
+
+        spatialDataCalculator->out.link(xoutSpatialData->input);
+        xinSpatialCalcConfig->out.link(spatialDataCalculator->inputConfig);
+
+    }
 
     // SYSTEM INFORMATION
     if (config->rate > 0.0f)
@@ -175,8 +248,8 @@ extern "C"
     /**
     * Pipeline creation based on streams template
     *
-    * @param config pipeline configuration 
-    * @returns pipeline 
+    * @param config pipeline configuration
+    * @returns pipeline
     */
     EXPORT_API bool InitHeadPose(PipelineConfig *config)
     {
@@ -185,10 +258,168 @@ extern "C"
         // If deviceId is empty .. just pick first available device
         bool res = false;
 
-        if (strcmp(config->deviceId,"NONE")==0 || strcmp(config->deviceId,"")==0) res = DAIStartPipeline(pipeline,config->deviceNum,NULL);        
+        if (strcmp(config->deviceId,"NONE")==0 || strcmp(config->deviceId,"")==0) res = DAIStartPipeline(pipeline,config->deviceNum,NULL);
         else res = DAIStartPipeline(pipeline,config->deviceNum,config->deviceId);
-        
+
         return res;
+    }
+
+
+    struct Detection {
+        unsigned int label;
+        float score;
+        float x_min;
+        float y_min;
+        float x_max;
+        float y_max;
+    };
+
+    void DrawDetections(std::vector<Detection>& dets, std::shared_ptr<dai::DataInputQueue>& spatialCalcConfigInQueue,
+                            std::shared_ptr<dai::DataOutputQueue>& spatialCalcQueue, cv::Mat& frame, cv::Mat& depthFrame,
+                            dai::SpatialLocationCalculatorConfig& cfg, nlohmann::json& facesArr, float faceScoreThreshold,
+                            std::shared_ptr<dai::DataInputQueue>& landm_in, std::shared_ptr<dai::DataOutputQueue>& landm_out,
+                            nlohmann::json& headPoseArr, nlohmann::json& bestFace, bool drawBestFaceInPreview, float maxPos) {
+
+            int i = 0;
+            cv::Mat faceFrame;
+
+            if (dets.size() > 0) {
+                spatialCalcConfigInQueue->send(cfg);
+
+                // get spatial
+                // auto spatialData = spatialCalcQueue->get<dai::SpatialLocationCalculatorData>()->getSpatialLocations();
+                // spatialCalcQueue->get<dai::SpatialLocationCalculatorData>();
+
+                for(const auto& d : dets) {
+                    // auto d = dets[i];
+                    int x1 = d.x_min * frame.cols;
+                    int y1 = d.y_min * frame.rows;
+                    int x2 = d.x_max * frame.cols;
+                    int y2 = d.y_max * frame.rows;
+                    int mx = x1 + ((x2 - x1) / 2);
+                    int my = y1 + ((y2 - y1) / 2);
+
+                    dconfig.roi = prepareComputeDepth(depthFrame,frame,mx,my,1);
+                    dconfig.calculationAlgorithm = calculationAlgorithm;
+                    cfg.addROI(dconfig);
+                    // m_mx = mx;
+                    // m_my = my;
+
+                    if (faceScoreThreshold <= d.score)
+                    {
+                        if (i==maxPos)
+                        {
+                            bestFace["label"] = d.label;
+                            bestFace["score"] = d.score;
+                            bestFace["xmin"] = d.x_min;
+                            bestFace["ymin"] = d.y_min;
+                            bestFace["xmax"] = d.x_max;
+                            bestFace["ymax"] = d.y_max;
+                            bestFace["xcenter"] = mx;
+                            bestFace["ycenter"] = my;
+                            // bestFace["X"] = (int)depthData.spatialCoordinates.x;
+                            // bestFace["Y"] = (int)depthData.spatialCoordinates.y;
+                            // bestFace["Z"] = (int)depthData.spatialCoordinates.z;
+                        }
+
+                        nlohmann::json face;
+
+                        face["label"] = d.label;
+                        face["score"] = d.score;
+                        face["xmin"] = d.x_min;
+                        face["ymin"] = d.y_min;
+                        face["xmax"] = d.x_max;
+                        face["ymax"] = d.y_max;
+                        face["xcenter"] = mx;
+
+                        face["ycenter"] = my;
+                        // face["X"] = (int)depthData.spatialCoordinates.x;
+                        // face["Y"] = (int)depthData.spatialCoordinates.y;
+                        // face["Z"] = (int)depthData.spatialCoordinates.z;
+
+                        if (x1 > 0 && y1 > 0 && x2 < 300 && y2 < 300)
+                            faceFrame = frame(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
+                        else
+                        {
+                            if (x1 <= 0) x1 = 0;
+                            if (y1 <= 0) y1 = 0;
+                            if (x2 >= 300) x2 = 300;
+                            if (y2 >= 300) y2 = 300;
+                            faceFrame = frame(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
+                        }
+
+                        // ------------------------- SECOND STAGE - HEAD POSE
+
+                        dai::NNData data_in;
+
+                        auto tensor = std::make_shared<dai::RawBuffer>();
+                        if (faceFrame.cols > 0 && faceFrame.rows > 0)
+                        {
+                            float yaw, pitch, roll;
+                            cv::Mat frame2 = resizeKeepAspectRatio(faceFrame, cv::Size(60,60), cv::Scalar(0));
+
+                            toPlanar(frame2, tensor->data);
+
+                            landm_in->send(tensor);
+
+                            auto detface = landm_out->get<dai::NNData>();
+
+                            nlohmann::json headPose;
+
+                            std::vector<float> detfaceYData = detface->getLayerFp16("angle_y_fc");
+                            if (detfaceYData.size() > 0)
+                            {
+                                if(detfaceYData.size() > 0){
+                                    yaw = detfaceYData[0];
+                                }
+                                std::vector<float> detfacePData = detface->getLayerFp16("angle_p_fc");
+                                if(detfacePData.size() > 0){
+                                    pitch = detfacePData[0];
+                                }
+                                std::vector<float> detfaceRData = detface->getLayerFp16("angle_r_fc");
+                                if(detfaceRData.size() > 0){
+                                    roll = detfaceRData[0];
+                                }
+
+                                headPose["yaw"] = yaw;
+                                headPose["roll"] = roll;
+                                headPose["pitch"] = pitch;
+
+                                roll = roll * 3.141596 / 180;
+                                pitch = pitch * 3.141596 / 180;
+                                yaw = -(yaw * 3.141596 / 180);
+
+                                if (drawBestFaceInPreview)
+                                {
+                                    int size = 50;
+                                    int origin0 = (x2 - x1)/2;
+                                    int origin1 = (y2 - y1)/2;
+                                    // X axis (red)
+                                    int rx1 = size * (cos(yaw) * cos(roll)) + origin0;
+                                    int ry1 = size * (cos(pitch) * sin(roll) + cos(roll) * sin(pitch) * sin(yaw)) + origin1;
+                                    cv::line(frame, cv::Point(origin0, origin1), cv::Point(rx1, ry1), cv::Scalar(0, 0, 255), 3);
+
+                                    // Y axis (green)
+                                    int rx2 = size * (-cos(yaw) * sin(roll)) + origin0;
+                                    int ry2 = size * (-cos(pitch) * cos(roll) - sin(pitch) * sin(yaw) * sin(roll)) + origin1;
+                                    cv::line(frame, cv::Point(origin0, origin1), cv::Point(rx2, ry2), cv::Scalar(0, 255, 0), 3);
+
+                                    // Z axis (blue)
+                                    int rx3 = size * (-sin(yaw)) + origin0;
+                                    int ry3 = size * (cos(yaw) * sin(pitch)) + origin1;
+                                    cv::line(frame, cv::Point(origin0, origin1), cv::Point(rx3,ry3), cv::Scalar(255, 0, 0), 2);
+                                }
+                            }
+
+                            facesArr.push_back(face);
+                            headPoseArr.push_back(headPose);
+
+                            if (drawBestFaceInPreview) cv::rectangle(frame, cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)), cv::Scalar(255,255,255));
+                        }
+                    }
+                    i++;
+                }
+            }
     }
 
     /**
@@ -200,8 +431,8 @@ extern "C"
     * @param retrieveInformation True if system information is requested, False otherwise. Requires rate in pipeline creation.
     * @param useIMU True if IMU information is requested, False otherwise. Requires freq in pipeline creation.
     * @param deviceNum Device selection on unity dropdown
-    * @returns Json with results or information about device availability. 
-    */    
+    * @returns Json with results or information about device availability.
+    */
 
     /**
     * Example of json returned
@@ -215,7 +446,7 @@ extern "C"
         // Get device deviceNum
         std::shared_ptr<dai::Device> device = GetDevice(deviceNum);
         // Device no available
-        if (device == NULL) 
+        if (device == NULL)
         {
             char* ret = (char*)::malloc(strlen("{\"error\":\"NO_DEVICE\"}"));
             ::memcpy(ret, "{\"error\":\"NO_DEVICE\"}",strlen("{\"error\":\"NO_DEVICE\"}"));
@@ -235,23 +466,32 @@ extern "C"
 
             std::shared_ptr<dai::DataOutputQueue> preview;
             std::shared_ptr<dai::DataOutputQueue> depthQueue;
+            std::shared_ptr<dai::DataOutputQueue> spatialCalcQueue;
+            std::shared_ptr<dai::DataInputQueue> spatialCalcConfigInQueue;
 
             // if preview image is requested. True in this case.
             if (getPreview) preview = device->getOutputQueue("preview",1,false);
-            
+
             // face emotion results
             auto detections = device->getOutputQueue("detections",1,false);
-            
+
             auto landm_in = device->getInputQueue("landm_in");
             auto landm_out = device->getOutputQueue("landm_out");
 
             // if depth images are requested. All images.
-            //if (useDepth) depthQueue = device->getOutputQueue("depth", 1, false);
-            
+            if (useDepth)
+            {
+                depthQueue = device->getOutputQueue("depth", 8, false);
+                spatialCalcQueue = device->getOutputQueue("spatialData", 8, false);
+                spatialCalcConfigInQueue = device->getInputQueue("spatialCalcConfig");
+            }
+
+            int countd;
+
             if (getPreview)
             {
                 auto imgFrames = preview->tryGetAll<dai::ImgFrame>();
-                auto countd = imgFrames.size();
+                countd = imgFrames.size();
                 if (countd > 0) {
                     auto imgFrame = imgFrames[countd-1];
                     if(imgFrame){
@@ -259,15 +499,27 @@ extern "C"
                     }
                 }
             }
-        
-            struct Detection {
-                unsigned int label;
-                float score;
-                float x_min;
-                float y_min;
-                float x_max;
-                float y_max;
-            };
+
+            vector<std::shared_ptr<dai::ImgFrame>> imgDepthFrames;
+            std::shared_ptr<dai::ImgFrame> imgDepthFrame;
+
+            int count;
+            // In this case we allocate before Texture2D (ARGB32) and memcpy pointer data
+            if (useDepth)
+            {
+                // Depth
+                imgDepthFrames = depthQueue->tryGetAll<dai::ImgFrame>();
+                count = imgDepthFrames.size();
+                if (count > 0)
+                {
+                    imgDepthFrame = imgDepthFrames[count-1];
+                    depthFrameOrig = imgDepthFrame->getFrame();
+                    cv::normalize(depthFrameOrig, depthFrame, 255, 0, cv::NORM_INF, CV_8UC1);
+                    cv::equalizeHist(depthFrame, depthFrame);
+                    cv::cvtColor(depthFrame, depthFrame, cv::COLOR_GRAY2BGR);
+                }
+            }
+
 
             vector<Detection> dets;
 
@@ -281,19 +533,18 @@ extern "C"
             nlohmann::json headPoseArr = {};
             nlohmann::json headPoseJson = {};
 
-            vector<std::shared_ptr<dai::ImgFrame>> imgDepthFrames;
-            std::shared_ptr<dai::ImgFrame> imgDepthFrame;
-            
+            dai::SpatialLocationCalculatorConfig cfg;
+
             if(detData.size() > 0){
                 int i = 0;
                 while (detData[i*7] != -1.0f && i*7 < (int)detData.size()) {
-                    
+
                     Detection d;
                     d.label = detData[i*7 + 1];
                     d.score = detData[i*7 + 2];
                     if (d.score >= faceScoreThreshold)
                     {
-                        if (d.score > maxScore) 
+                        if (d.score > maxScore)
                         {
                             maxScore = d.score;
                             maxPos = i;
@@ -307,128 +558,75 @@ extern "C"
                     i++;
                 }
             }
-            int i = 0;
-            cv::Mat faceFrame;
-            for(const auto& d : dets){
-                int x1 = d.x_min * frame.cols;
-                int y1 = d.y_min * frame.rows;
-                int x2 = d.x_max * frame.cols;
-                int y2 = d.y_max * frame.rows;
-                int mx = x1 + ((x2 - x1) / 2);
-                int my = y1 + ((y2 - y1) / 2);
 
-                // m_mx = mx;
-                // m_my = my;
+            DrawDetections(dets, spatialCalcConfigInQueue, spatialCalcQueue, frame, depthFrame, cfg, facesArr, faceScoreThreshold, landm_in, landm_out, headPoseArr, bestFace, drawBestFaceInPreview, maxPos);
 
-                if (faceScoreThreshold <= d.score)
-                {
-                    if (i==maxPos)
-                    {
-                        bestFace["label"] = d.label;
-                        bestFace["score"] = d.score;
-                        bestFace["xmin"] = d.x_min;
-                        bestFace["ymin"] = d.y_min;
-                        bestFace["xmax"] = d.x_max;
-                        bestFace["ymax"] = d.y_max;
-                        bestFace["xcenter"] = mx;
-                        bestFace["ycenter"] = my;
-                    }
+            // send spatial
+            // if (dets.size() > 0)
+            // {
 
-                    nlohmann::json face;
+            //     spatialCalcConfigInQueue->send(cfg);
 
-                    face["label"] = d.label;
-                    face["score"] = d.score;
-                    face["xmin"] = d.x_min;
-                    face["ymin"] = d.y_min;
-                    face["xmax"] = d.x_max;
-                    face["ymax"] = d.y_max;
-                    face["xcenter"] = mx;
-                    face["ycenter"] = my;
+            //     // get spatial
+            //     auto spatialData = spatialCalcQueue->get<dai::SpatialLocationCalculatorData>()->getSpatialLocations();
 
-                    if (x1 > 0 && y1 > 0 && x2 < 300 && y2 < 300)
-                        faceFrame = frame(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
-                    else  
-                    {
-                        if (x1 <= 0) x1 = 0;
-                        if (y1 <= 0) y1 = 0;
-                        if (x2 >= 300) x2 = 300;
-                        if (y2 >= 300) y2 = 300;
-                        faceFrame = frame(cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)));
-                    }
 
-                    // ------------------------- SECOND STAGE - HEAD POSE
+            //     int i = 0;
+            //     // write jsons
+            //     for(auto depthData : spatialData) {
+            //         auto d = dets[i];
+            //         nlohmann::json face;
+            //         face["label"] = d.label;
+            //         face["score"] = d.score;
+            //         face["xmin"] = d.x_min;
+            //         face["ymin"] = d.y_min;
+            //         face["xmax"] = d.x_max;
+            //         face["ymax"] = d.y_max;
+            //         int x1 = d.x_min * frame.cols;
+            //         int y1 = d.y_min * frame.rows;
+            //         int x2 = d.x_max * frame.cols;
+            //         int y2 = d.y_max * frame.rows;
+            //         int mx = x1 + ((x2 - x1) / 2);
+            //         int my = y1 + ((y2 - y1) / 2);
+            //         face["xcenter"] = mx;
+            //         face["ycenter"] = my;
 
-                    dai::NNData data_in;
+            //         if (getPreview && countd > 0 && drawAllFacesInPreview) cv::rectangle(frame, cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)), cv::Scalar(255,255,255));
 
-                    auto tensor = std::make_shared<dai::RawBuffer>();
-                    if (faceFrame.cols > 0 && faceFrame.rows > 0)
-                    {
-                        float yaw, pitch, roll;
-                        cv::Mat frame2 = resizeKeepAspectRatio(faceFrame, cv::Size(60,60), cv::Scalar(0));
+            //         auto roi = depthData.config.roi;
+            //         roi = roi.denormalize(depthFrame.cols, depthFrame.rows);
 
-                        toPlanar(frame2, tensor->data);
+            //         face["X"] = (int)depthData.spatialCoordinates.x;
+            //         face["Y"] = (int)depthData.spatialCoordinates.y;
+            //         face["Z"] = (int)depthData.spatialCoordinates.z;
+            //         facesArr.push_back(face);
 
-                        landm_in->send(tensor);
+            //         if (i == maxPos)
+            //         {
+            //             bestFace["label"] = d.label;
+            //             bestFace["score"] = d.score;
+            //             bestFace["xmin"] = d.x_min;
+            //             bestFace["ymin"] = d.y_min;
+            //             bestFace["xmax"] = d.x_max;
+            //             bestFace["ymax"] = d.y_max;
+            //             bestFace["xcenter"] = mx;
+            //             bestFace["ycenter"] = my;
 
-                        auto detface = landm_out->get<dai::NNData>();
-                        
-                        nlohmann::json headPose;
+            //             bestFace["X"] = (int)depthData.spatialCoordinates.x;
+            //             bestFace["Y"] = (int)depthData.spatialCoordinates.y;
+            //             bestFace["Z"] = (int)depthData.spatialCoordinates.z;
 
-                        std::vector<float> detfaceYData = detface->getLayerFp16("angle_y_fc");
-                        if (detfaceYData.size() > 0)
-                        {
-                            if(detfaceYData.size() > 0){
-                                yaw = detfaceYData[0];
-                            }
-                            std::vector<float> detfacePData = detface->getLayerFp16("angle_p_fc");
-                            if(detfacePData.size() > 0){
-                                pitch = detfacePData[0];
-                            }
-                            std::vector<float> detfaceRData = detface->getLayerFp16("angle_r_fc");
-                            if(detfaceRData.size() > 0){
-                                roll = detfaceRData[0];
-                            }
+            //             if (getPreview && countd > 0 && drawBestFaceInPreview)
+            //             {
+            //                 cv::rectangle(frame, cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)), cv::Scalar(255,255,255));
+            //             }
+            //         }
 
-                            headPose["yaw"] = yaw;
-                            headPose["roll"] = roll;
-                            headPose["pitch"] = pitch;
-                            
-                            roll = roll * 3.141596 / 180;
-                            pitch = pitch * 3.141596 / 180;
-                            yaw = -(yaw * 3.141596 / 180); 
+            //         i++;
+            //     }
+            // }
 
-                            if (drawBestFaceInPreview)
-                            {
-                                int size = 50;
-                                int origin0 = (x2 - x1)/2;
-                                int origin1 = (y2 - y1)/2;
-                                // X axis (red)
-                                int rx1 = size * (cos(yaw) * cos(roll)) + origin0;
-                                int ry1 = size * (cos(pitch) * sin(roll) + cos(roll) * sin(pitch) * sin(yaw)) + origin1;
-                                cv::line(frame, cv::Point(origin0, origin1), cv::Point(rx1, ry1), cv::Scalar(0, 0, 255), 3);
-
-                                // Y axis (green)
-                                int rx2 = size * (-cos(yaw) * sin(roll)) + origin0;
-                                int ry2 = size * (-cos(pitch) * cos(roll) - sin(pitch) * sin(yaw) * sin(roll)) + origin1;
-                                cv::line(frame, cv::Point(origin0, origin1), cv::Point(rx2, ry2), cv::Scalar(0, 255, 0), 3);
-
-                                // Z axis (blue)
-                                int rx3 = size * (-sin(yaw)) + origin0;
-                                int ry3 = size * (cos(yaw) * sin(pitch)) + origin1;
-                                cv::line(frame, cv::Point(origin0, origin1), cv::Point(rx3,ry3), cv::Scalar(255, 0, 0), 2);
-                            }
-                        }
-
-                        facesArr.push_back(face);
-                        headPoseArr.push_back(headPose);
-
-                        if (drawBestFaceInPreview) cv::rectangle(frame, cv::Rect(cv::Point(x1, y1), cv::Point(x2, y2)), cv::Scalar(255,255,255));
-                    }
-                }
-                i++;
-            }
-
-            if (getPreview && frame.cols>0 && frame.rows>0) 
+            if (getPreview && frame.cols>0 && frame.rows>0)
             {
                 cv::Mat resizedMat(height, width, frame.type());
                 cv::resize(frame, resizedMat, resizedMat.size(), cv::INTER_CUBIC);
@@ -437,7 +635,7 @@ extern "C"
             }
 
             // SYSTEM INFORMATION
-            if (retrieveInformation) headPoseJson["sysinfo"] = GetDeviceInfo(device);        
+            if (retrieveInformation) headPoseJson["sysinfo"] = GetDeviceInfo(device);
             // IMU
             if (useIMU) headPoseJson["imu"] = GetIMU(device);
 

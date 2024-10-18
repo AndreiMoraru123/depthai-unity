@@ -18,8 +18,8 @@ namespace OAKForUnity
         /*
         * Pipeline creation based on streams template
         *
-        * @param config pipeline configuration 
-        * @returns pipeline 
+        * @param config pipeline configuration
+        * @returns pipeline
         */
         private static extern bool InitHeadPose(in PipelineConfig config);
 
@@ -36,37 +36,37 @@ namespace OAKForUnity
         * @param retrieveInformation True if system information is requested, False otherwise. Requires rate in pipeline creation.
         * @param useIMU True if IMU information is requested, False otherwise. Requires freq in pipeline creation.
         * @param deviceNum Device selection on unity dropdown
-        * @returns Json with results or information about device availability. 
-        */    
+        * @returns Json with results or information about device availability.
+        */
         private static extern IntPtr HeadPoseResults(out FrameInfo frameInfo, bool getPreview, int width, int height, bool drawBestFaceInPreview, bool drawAllFacesInPreview, float faceScoreThreshold, bool useDepth, bool retrieveInformation, bool useIMU, int deviceNum);
 
-        
+
         // Editor attributes
-        [Header("RGB Camera")] 
+        [Header("RGB Camera")]
         public float cameraFPS = 30;
         public RGBResolution rgbResolution;
         private const bool Interleaved = false;
         private const ColorOrder ColorOrderV = ColorOrder.BGR;
 
-        [Header("Mono Cameras")] 
+        [Header("Mono Cameras")]
         public MonoResolution monoResolution;
 
-        [Header("Face Emotion Configuration")] 
+        [Header("Face Emotion Configuration")]
         public MedianFilter medianFilter;
         public bool useIMU = false;
         public bool retrieveSystemInformation = false;
         public bool drawBestFaceInPreview;
         public bool drawAllFacesInPreview;
-        public float faceScoreThreshold; 
+        public float faceScoreThreshold;
         private const bool GETPreview = true;
         private const bool UseDepth = true;
 
-        [Header("Head Pose Results")] 
+        [Header("Head Pose Results")]
         public Texture2D colorTexture;
         public string headPoseResults;
         public string systemInfo;
         public GameObject cube;
-        
+
         // private attributes
         private Color32[] _colorPixel32;
         private GCHandle _colorPixelHandle;
@@ -75,7 +75,7 @@ namespace OAKForUnity
         private float oldHeadPoseYaw;
         private float oldHeadPoseRoll;
         private float oldHeadPosePitch;
-        
+
         // Init textures. Each PredefinedBase implementation handles textures. Decoupled from external viz (Canvas, VFX, ...)
         void InitTexture()
         {
@@ -93,10 +93,10 @@ namespace OAKForUnity
             oldHeadPoseYaw = 0.0f;
             oldHeadPoseRoll = 0.0f;
             oldHeadPosePitch = 0.0f;
-            
+
             // Init dataPath to load face detector NN model
             _dataPath = Application.dataPath;
-            
+
             InitTexture();
 
             // Init FrameInfo. Only need it in case memcpy data ptr on plugin lib.
@@ -114,14 +114,14 @@ namespace OAKForUnity
             // Need it for color camera preview
             config.previewSizeHeight = 300;
             config.previewSizeWidth = 300;
-            
+
             // Mono camera
             config.monoLCameraResolution = (int) monoResolution;
             config.monoRCameraResolution = (int) monoResolution;
 
             // Depth
             // Need it for depth
-            /*config.confidenceThreshold = 230;
+            config.confidenceThreshold = 230;
             config.leftRightCheck = true;
             if (rgbResolution == RGBResolution.THE_800_P)
             {
@@ -132,7 +132,7 @@ namespace OAKForUnity
             {
                 config.ispScaleF1 = 2;
                 config.ispScaleF2 = 3;
-            }*/
+            }
             config.manualFocus = 130;
             //config.depthAlign = 1; // RGB align
             config.subpixel = false;
@@ -141,7 +141,7 @@ namespace OAKForUnity
             if (useIMU) config.freq = 400;
             if (retrieveSystemInformation) config.rate = 30.0f;
             config.medianFilter = (int) medianFilter;
-            
+
             // 2-stage NN model
             config.nnPath1 = _dataPath +
                              "/Plugins/OAKForUnity/Models/face-detection-retail-0004_openvino_2021.2_4shave.blob";
@@ -205,16 +205,16 @@ namespace OAKForUnity
             if (string.IsNullOrEmpty(headPoseResults)) return;
 
             // EXAMPLE HOW TO PARSE INFO
-            
+
             var obj = JSON.Parse(headPoseResults);
             int centerx = 0;
             int centery = 0;
-            
+
             float headPoseYaw = 0.0f;
             float headPoseRoll = 0.0f;
             float headPosePitch = 0.0f;
-            
-            
+
+
             if (obj != null)
             {
                 centerx = obj["best"]["xcenter"];
@@ -232,7 +232,7 @@ namespace OAKForUnity
 
                     device.Record(headPoseResults, textures, nameTextures);
                 }
-                
+
                 // PROCESS HEAD POSE RESULTS
                 headPoseYaw = obj["headPoses"][0]["yaw"];
                 headPoseRoll = obj["headPoses"][0]["roll"];
@@ -242,15 +242,15 @@ namespace OAKForUnity
                 {
                     //cube.transform.Rotate((headPosePitch - oldHeadPosePitch), -(headPoseYaw - oldHeadPoseYaw), (headPoseRoll - oldHeadPoseRoll), Space.Self);
                     cube.transform.Rotate(0f, -(headPoseYaw - oldHeadPoseYaw)*1.5f, 0f, Space.Self);
-                    
+
                     oldHeadPoseRoll = headPoseRoll;
                     oldHeadPoseYaw = headPoseYaw;
                     oldHeadPosePitch = headPosePitch;
                 }
             }
-            
+
             if (!retrieveSystemInformation || obj == null) return;
-            
+
             float ddrUsed = obj["sysinfo"]["ddr_used"];
             float ddrTotal = obj["sysinfo"]["ddr_total"];
             float cmxUsed = obj["sysinfo"]["cmx_used"];
