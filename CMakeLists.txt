@@ -42,6 +42,7 @@ add_library(${TARGET_NAME}
     src/predefined/BodyPose.cpp
     src/predefined/FaceEmotion.cpp
     src/predefined/HeadPose.cpp
+    src/custom/YoloDetector.cpp
     src/Depth.cpp
 )
 

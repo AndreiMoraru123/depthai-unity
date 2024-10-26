@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "visualstudiotoolsforunity.vstuc",
+    "ms-dotnettools.csdevkit",
+    "ms-vscode.cpptools-extension-pack",
+    "ms-python.python"
+  ]
+}
