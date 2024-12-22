@@ -2,21 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum InteractionType
-{
-    Default,
-    HandGesture
-}
-
 public abstract class Interactable : MonoBehaviour
 {
     public bool useEvents;
 
     [SerializeField]
     public string promptMessage;
-
-    [SerializeField]
-    public InteractionType interactionType = InteractionType.Default;
 
     public virtual bool ValidateInteraction()
     {

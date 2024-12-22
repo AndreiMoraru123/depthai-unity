@@ -9,7 +9,7 @@ public class KeypadHandTracker : MonoBehaviour
     private OAKForUnity.UBHandTracking handTracking;
 
     [SerializeField]
-    private float requiredStabelTime = 0.5f; // how long to hold a gesture
+    private float requiredStableTime = 0.5f; // how long to hold a gesture
     private float gestureStableTime = 0f;
     private int lastRecognizedGesture = -1;
 
@@ -27,7 +27,7 @@ public class KeypadHandTracker : MonoBehaviour
         if (hand["gesture"] == "PEACE" || hand["gesture"] == "TWO") return 2;
         if (hand["gesture"] == "THREE") return 3;
         if (hand["gesture"] == "FOUR") return 4;
-        if (hand["gesture"] == "FIVe") return 5;
+        if (hand["gesture"] == "FIVE") return 5;
         return -1;
     }
 
@@ -54,7 +54,7 @@ public class KeypadHandTracker : MonoBehaviour
 
         if (gesture == lastRecognizedGesture && gesture != -1)
         {
-            if (Time.time - gestureStableTime >= requiredStabelTime)
+            if (Time.time - gestureStableTime >= requiredStableTime)
             {
                 gestureStableTime = Time.time;
                 return true;

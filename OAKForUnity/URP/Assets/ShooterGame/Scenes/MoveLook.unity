@@ -18587,7 +18587,7 @@ MonoBehaviour:
   promptMessage: Use Keypad
   interactionType: 1
   door: {fileID: 535081142}
-  requiredSequence: 0200000003000000
+  requiredSequence: 020000000300000001000000
   sequenceTimeout: 5
 --- !u!114 &1714942400
 MonoBehaviour:

@@ -24,7 +24,7 @@ public class Keypad : Interactable
     {
         if (handTracker == null) handTracker = GetComponent<KeypadHandTracker>();
         if (handTracker == null) Debug.LogError("missing KeypadHandTracker component.");
-        promptMessage = "Code: " + string.Join("-", requiredSequence);
+        UpdatePromptMessage();
     }
 
     // Update is called once per frame
@@ -39,6 +39,29 @@ public class Keypad : Interactable
         {
             HandleNewGesture(gesture);
         }
+    }
+
+    private void UpdatePromptMessage()
+    {
+        string message = "Code: ";
+        for (int i = 0; i < requiredSequence.Length; i++)
+        {
+            if (i > 0) message += "-";
+            if (i < currentSequence.Count)
+            {
+                message += $"<color=green>{requiredSequence[i]}</color>";
+            }
+            else if (i == currentSequence.Count)
+            {
+
+                message += $"<color=red>{requiredSequence[i]}</color>";
+            }
+            else
+            {
+                message += requiredSequence[i].ToString();
+            }
+        }
+        promptMessage = message;
     }
 
     public void HandleNewGesture(int gesture)
@@ -65,6 +88,8 @@ public class Keypad : Interactable
             return;
         }
 
+        UpdatePromptMessage();
+
         if (currentSequence.Count == requiredSequence.Length)
         {
             Interact();
@@ -76,12 +101,12 @@ public class Keypad : Interactable
     {
         currentSequence.Clear();
         lastGestureTime = 0f;
+        UpdatePromptMessage();
     }
 
     public override bool ValidateInteraction()
     {
         var number = handTracker.HandleGesture();
-        Debug.Log(number.ToString());
         return currentSequence.Count < requiredSequence.Length && number == requiredSequence[currentSequence.Count];
     }
 
