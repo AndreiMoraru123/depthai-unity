@@ -18,14 +18,14 @@ public abstract class Interactable : MonoBehaviour
     [SerializeField]
     public InteractionType interactionType = InteractionType.Default;
 
-    public virtual bool ValidateInteraction(object interactionData)
+    public virtual bool ValidateInteraction()
     {
         return true;
     }
 
-    public void BaseInteract(object interactionData = null)
+    public void BaseInteract()
     {
-        if (!ValidateInteraction(interactionData))
+        if (!ValidateInteraction())
         {
             Debug.Log("invalid interaction");
             return;
@@ -37,9 +37,9 @@ public abstract class Interactable : MonoBehaviour
             GetComponent<InteractionEvent>().onInteract.Invoke();
         }
 
-        Interact(interactionData);
+        Interact();
     }
-    protected virtual void Interact(object interactionData = null)
+    protected virtual void Interact()
     {
     }
 }

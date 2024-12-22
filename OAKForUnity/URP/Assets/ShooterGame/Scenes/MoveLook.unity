@@ -2725,7 +2725,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 248678266}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 12.5, y: 0, z: 27.04}
+  m_LocalPosition: {x: 12.5, y: 1, z: 27.04}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10347,7 +10347,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 885260294}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -14.95, y: 0, z: 1.61}
+  m_LocalPosition: {x: -14.95, y: 1, z: 1.61}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -13562,7 +13562,7 @@ NavMeshAgent:
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 2
-  m_BaseOffset: 1
+  m_BaseOffset: 2
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!114 &1189640569
@@ -18587,8 +18587,8 @@ MonoBehaviour:
   promptMessage: Use Keypad
   interactionType: 1
   door: {fileID: 535081142}
-  requiredNumber: 4
-  handTracker: {fileID: 0}
+  requiredSequence: 0200000003000000
+  sequenceTimeout: 5
 --- !u!114 &1714942400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18602,6 +18602,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handTracking: {fileID: 1265197998}
+  requiredStabelTime: 0.5
 --- !u!1 &1720800890
 GameObject:
   m_ObjectHideFlags: 0
@@ -20882,7 +20883,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1873872612}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -5.79, y: 0, z: 28.56}
+  m_LocalPosition: {x: -5.79, y: 1, z: 28.56}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -21681,7 +21682,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1963109406}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.65, y: 0, z: -19.95}
+  m_LocalPosition: {x: 8.65, y: 1, z: -19.95}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -23019,7 +23020,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2047207336}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -40, y: 0.5, z: -10}
+  m_LocalPosition: {x: -40, y: 1, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

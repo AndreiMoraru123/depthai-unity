@@ -8,6 +8,11 @@ public class KeypadHandTracker : MonoBehaviour
     [SerializeField]
     private OAKForUnity.UBHandTracking handTracking;
 
+    [SerializeField]
+    private float requiredStabelTime = 0.5f; // how long to hold a gesture
+    private float gestureStableTime = 0f;
+    private int lastRecognizedGesture = -1;
+
     public void LogGesture()
     {
         if (string.IsNullOrEmpty(handTracking.ubHandTrackingResults)) return;
@@ -16,15 +21,14 @@ public class KeypadHandTracker : MonoBehaviour
 
     public int CountFingers(JSONNode hand)
     {
-        int count = 0;
+        if (hand == null) return -1;
         if (hand["gesture"] == "FIST") return 0;
         if (hand["gesture"] == "OK" || hand["gesture"] == "ONE") return 1;
         if (hand["gesture"] == "PEACE" || hand["gesture"] == "TWO") return 2;
         if (hand["gesture"] == "THREE") return 3;
         if (hand["gesture"] == "FOUR") return 4;
         if (hand["gesture"] == "FIVe") return 5;
-
-        return count;
+        return -1;
     }
 
     public int HandleGesture()
@@ -42,5 +46,26 @@ public class KeypadHandTracker : MonoBehaviour
         var numFingers = CountFingers(activeHand);
         return numFingers;
 
+    }
+
+    public bool TryGetStableGesture(out int gesture)
+    {
+        gesture = HandleGesture();
+
+        if (gesture == lastRecognizedGesture && gesture != -1)
+        {
+            if (Time.time - gestureStableTime >= requiredStabelTime)
+            {
+                gestureStableTime = Time.time;
+                return true;
+            }
+        }
+        else
+        {
+            lastRecognizedGesture = gesture;
+            gestureStableTime = Time.time;
+        }
+
+        return false;
     }
 }
