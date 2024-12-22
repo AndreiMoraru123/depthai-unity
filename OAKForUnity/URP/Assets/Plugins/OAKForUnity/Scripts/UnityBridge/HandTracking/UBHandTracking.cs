@@ -185,7 +185,7 @@ namespace OAKForUnity
             }
             else
             {
-                if (countData + 2 < arr2[0]) Debug.LogError("MISSING DATA " + countData + " " + arr2[0]);
+                // if (countData + 2 < arr2[0]) Debug.LogError("MISSING DATA " + countData + " " + arr2[0]);
                 countData = arr2[0];
             }
 

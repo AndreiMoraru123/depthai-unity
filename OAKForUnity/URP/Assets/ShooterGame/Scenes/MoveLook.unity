@@ -2809,6 +2809,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &249333094
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3922,6 +3923,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &302404087
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4160,6 +4162,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &312908337
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -4859,6 +4862,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Heal Player
+  interactionType: 0
 --- !u!65 &339093137
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -5611,6 +5615,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &410867906
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -8522,6 +8527,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &740035562
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -9341,6 +9347,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &815364834
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -9923,6 +9930,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &858998813
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13130,6 +13138,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1160558556
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -13367,6 +13376,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1176195811
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -17728,6 +17738,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1624808992
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -18256,6 +18267,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1694887755
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -18396,6 +18408,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1714007991
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -18472,6 +18485,7 @@ GameObject:
   - component: {fileID: 1714942397}
   - component: {fileID: 1714942396}
   - component: {fileID: 1714942399}
+  - component: {fileID: 1714942400}
   m_Layer: 6
   m_Name: Keypad
   m_TagString: Untagged
@@ -18571,7 +18585,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 0
   promptMessage: Use Keypad
+  interactionType: 1
   door: {fileID: 535081142}
+  requiredNumber: 4
+  handTracker: {fileID: 0}
+--- !u!114 &1714942400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1714942394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e585c88c78e7eb248a825c355d3020c3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  handTracking: {fileID: 1265197998}
 --- !u!1 &1720800890
 GameObject:
   m_ObjectHideFlags: 0
@@ -18823,6 +18853,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1764919019
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -19353,6 +19384,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1788738449
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -19784,6 +19816,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &1828080099
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -21237,6 +21270,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Damage Player
+  interactionType: 0
 --- !u!1 &1941965013
 GameObject:
   m_ObjectHideFlags: 0
@@ -22799,6 +22833,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   useEvents: 1
   promptMessage: Destroy
+  interactionType: 0
 --- !u!65 &2040195756
 BoxCollider:
   m_ObjectHideFlags: 0
