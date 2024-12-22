@@ -35,13 +35,18 @@ public class Keypad : Interactable
             ResetSequence();
         }
 
+        if (handTracker.CurrentGesture != -1)
+        {
+            UpdatePromptMessage(true);
+        }
+
         if (handTracker.TryGetStableGesture(out int gesture))
         {
             HandleNewGesture(gesture);
         }
     }
 
-    private void UpdatePromptMessage()
+    private void UpdatePromptMessage(bool showProgress = false)
     {
         string message = "Code: ";
         for (int i = 0; i < requiredSequence.Length; i++)
@@ -53,8 +58,16 @@ public class Keypad : Interactable
             }
             else if (i == currentSequence.Count)
             {
-
-                message += $"<color=red>{requiredSequence[i]}</color>";
+                if (showProgress && handTracker.CurrentGesture == requiredSequence[i])
+                {
+                    float progress = handTracker.StabilityProgress;
+                    string colorHex = ColorUtility.ToHtmlStringRGB(Color.Lerp(Color.yellow, Color.green, progress));
+                    message += $"<color=#{colorHex}>{requiredSequence[i]}</color>";
+                }
+                else
+                {
+                    message += $"<color=red>{requiredSequence[i]}</color>";
+                }
             }
             else
             {

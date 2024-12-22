@@ -13,11 +13,16 @@ public class KeypadHandTracker : MonoBehaviour
     private float gestureStableTime = 0f;
     private int lastRecognizedGesture = -1;
 
-    public void LogGesture()
+    public float StabilityProgress
     {
-        if (string.IsNullOrEmpty(handTracking.ubHandTrackingResults)) return;
-        Debug.Log(handTracking.ubHandTrackingResults);
+        get
+        {
+            if (lastRecognizedGesture == -1) return 0f;
+            return Mathf.Clamp01((Time.time - gestureStableTime) / requiredStableTime);
+        }
     }
+
+    public int CurrentGesture => lastRecognizedGesture;
 
     public int CountFingers(JSONNode hand)
     {
