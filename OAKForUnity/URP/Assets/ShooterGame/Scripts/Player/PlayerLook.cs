@@ -4,11 +4,16 @@ using UnityEngine;
 
 public class PlayerLook : MonoBehaviour
 {
-    // Start is called before the first frame update
     public Camera cam;
     private float xRotation = 0f;
     public float xSensitivity = 30f;
     public float ySensitivity = 30f;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+    }
 
     public void ProcessLook(Vector2 input)
     {
