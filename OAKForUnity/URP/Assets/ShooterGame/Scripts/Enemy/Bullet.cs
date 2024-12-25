@@ -12,6 +12,10 @@ public class Bullet : MonoBehaviour
             Debug.Log("Hit Player");
             hitTransform.GetComponent<PlayerHealth>().TakeDamage(10);
         }
-        Destroy(gameObject);
+        if (hitTransform.CompareTag("Target"))
+        {
+            Debug.Log("Hit " + hitTransform.gameObject.name);
+            Destroy(gameObject);
+        }
     }
 }
