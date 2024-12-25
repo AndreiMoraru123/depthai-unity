@@ -14,12 +14,12 @@ public class Enemy : MonoBehaviour
     public Vector3 LastKnownPos { get => lastKnownPos; set => lastKnownPos = value; }
 
     public Path path;
-    public GameObject debugSphere;
 
     [Header("Sight Values")]
     public float sightDistance = 20f;
     public float fieldOfView = 85f;
     public float eyeHeight = 1f;
+    public LayerMask detectionLayers;
 
     [Header("Weapon Values")]
     public Transform gunBarrel;
@@ -36,6 +36,8 @@ public class Enemy : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         stateMachine.Initialize();
         player = GameObject.FindGameObjectWithTag("Player");
+        // include everything but the weapon layer
+        detectionLayers = Physics.DefaultRaycastLayers & ~(1 << LayerMask.NameToLayer("Weapon"));
     }
 
     // Update is called once per frame
@@ -43,7 +45,6 @@ public class Enemy : MonoBehaviour
     {
         CanSeePlayer();
         currentState = stateMachine.activeState.ToString();
-        debugSphere.transform.position = lastKnownPos;
     }
 
     public bool CanSeePlayer()
@@ -57,13 +58,18 @@ public class Enemy : MonoBehaviour
                 if (angleToPlayer >= -fieldOfView && angleToPlayer <= fieldOfView)
                 {
                     Ray ray = new Ray(transform.position + (Vector3.up * eyeHeight), targetDirection);
-                    RaycastHit hitInfo = new RaycastHit();
-                    if (Physics.Raycast(ray, out hitInfo, sightDistance))
+                    RaycastHit hitInfo;
+                    if (Physics.Raycast(ray, out hitInfo, sightDistance, detectionLayers))
                     {
                         if (hitInfo.transform.gameObject == player)
                         {
-                            Debug.DrawRay(ray.origin, ray.direction * sightDistance);
+                            Debug.DrawRay(ray.origin, ray.direction * sightDistance, Color.green);
+                            lastKnownPos = player.transform.position;
                             return true;
+                        }
+                        else
+                        {
+                            Debug.DrawRay(ray.origin, ray.direction * sightDistance, Color.red);
                         }
                     }
                 }
