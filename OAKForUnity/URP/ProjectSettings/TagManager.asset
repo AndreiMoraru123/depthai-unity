@@ -6,6 +6,7 @@ TagManager:
   tags:
   - OAKDevice
   - Target
+  - Solid
   layers:
   - Default
   - TransparentFX
