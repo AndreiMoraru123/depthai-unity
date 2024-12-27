@@ -13,15 +13,23 @@ public class PlayerWeapon : WeaponBase
     public int bulletsPerBurst = 3;
     public int burstBulletsLeft;
     public float spreadIntensity;
+    public GameObject muzzleEffect;
+    private Animator animator;
 
     public void Awake()
     {
         readyToShoot = true;
         burstBulletsLeft = bulletsPerBurst;
+        animator = GetComponent<Animator>();
     }
 
     private void DelayedFire()
     {
+        muzzleEffect.GetComponent<ParticleSystem>().Play();
+        animator.SetTrigger("RECOIL");
+
+        SoundManager.Instance.shootingSoundM1911.Play();
+
         readyToShoot = false;
         Vector3 shootingDirection = CalculateDirectionAndSpread().normalized;
 
@@ -73,9 +81,15 @@ public class PlayerWeapon : WeaponBase
         return direction + new Vector3(x, y, 0);
     }
 
+    // TODO: Will I ever use this?
     private void RapidFire()
     {
         // Fire with no restrictions
+        muzzleEffect.GetComponent<ParticleSystem>().Play();
+        animator.SetTrigger("RECOIL");
+
+        SoundManager.Instance.shootingSoundM1911.Play();
+
         GameObject bullet = Instantiate(bulletPrefab, bulletSpawn.position, Quaternion.identity);
         bullet.GetComponent<Rigidbody>().AddForce(bulletSpawn.forward.normalized * bulletVelocity, ForceMode.Impulse);
         StartCoroutine(DestroyBulletAfterTime(bullet, bulletPrefabLifetime));
