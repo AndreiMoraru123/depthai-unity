@@ -7,7 +7,6 @@ public class PlayerWeapon : WeaponBase
         Single, Burst, Auto
     }
     public ShootingMode currentShootingMode;
-    public Camera playerCamera;
     public bool isShooting, readyToShoot;
     private bool allowReset = true;
     public float shootingDelay = 2f;
@@ -54,7 +53,7 @@ public class PlayerWeapon : WeaponBase
 
     public Vector3 CalculateDirectionAndSpread()
     {
-        Ray ray = playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+        Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
         RaycastHit hit;
         Vector3 targetPoint;
 
