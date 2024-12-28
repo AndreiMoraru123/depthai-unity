@@ -50,7 +50,5 @@ public class SoundManager : MonoBehaviour
                 reloadingSoundAK47.Play();
                 break;
         }
-
-
     }
 }

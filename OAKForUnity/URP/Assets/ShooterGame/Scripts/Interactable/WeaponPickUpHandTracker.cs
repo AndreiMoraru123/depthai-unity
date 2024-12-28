@@ -1,9 +1,10 @@
+
 using System.Collections;
 using System.Collections.Generic;
 using SimpleJSON;
 using UnityEngine;
 
-public class KeypadHandTracker : HandTracker
+public class WeaponPickUpHandTracker : HandTracker
 {
     [SerializeField]
     private OAKForUnity.UBHandTracking handTracking;
