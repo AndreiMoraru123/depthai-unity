@@ -25,11 +25,11 @@ public class InteractionManager : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit))
         {
-            GameObject objectHit = hit.transform.gameObject;
-            if (objectHit.GetComponent<PlayerWeapon>())
+            var objectHit = hit.transform.gameObject;
+            if (objectHit.GetComponent<PlayerWeapon>() && objectHit.GetComponent<PlayerWeapon>().isActiveWeapon == false)
             {
                 hoveredWeapon = objectHit.gameObject.GetComponent<PlayerWeapon>();
-                WeaponPickUp pickUp = objectHit.GetComponent<WeaponPickUp>();
+                var pickUp = objectHit.GetComponent<WeaponPickUp>();
 
                 hoveredWeapon.GetComponent<Outline>().enabled = true;
 
@@ -43,6 +43,7 @@ public class InteractionManager : MonoBehaviour
                 if (hoveredWeapon)
                 {
                     hoveredWeapon.GetComponent<Outline>().enabled = false;
+                    hoveredWeapon = null;
                 }
             }
         }
@@ -51,6 +52,7 @@ public class InteractionManager : MonoBehaviour
             if (hoveredWeapon)
             {
                 hoveredWeapon.GetComponent<Outline>().enabled = false;
+                hoveredWeapon = null;
             }
         }
     }

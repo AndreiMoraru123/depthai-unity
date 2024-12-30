@@ -6,8 +6,6 @@ using SimpleJSON;
 
 public class WeaponPickUp : Interactable
 {
-    public PlayerWeapon hoveredWeapon = null;
-
     [SerializeField]
     private string[] requiredSequence;
 
@@ -132,10 +130,12 @@ public class WeaponPickUp : Interactable
 
     protected override void Interact()
     {
+        var hoveredWeapon = InteractionManager.Instance.hoveredWeapon;
         if (hoveredWeapon != null)
         {
             Debug.Log("Picked up weapon");
             WeaponManager.Instance.PickupWeapon(hoveredWeapon.gameObject);
+            InteractionManager.Instance.hoveredWeapon = null;
         }
     }
 

@@ -207,7 +207,7 @@ namespace OAKForUnity
                 {
                     float rotation = (float)hand0["rotation"];
                     rotation *= 0.1f;
-                    light.transform.Rotate(Vector3.right, rotation);
+                    // light.transform.Rotate(Vector3.right, rotation);
                 }
 
             }

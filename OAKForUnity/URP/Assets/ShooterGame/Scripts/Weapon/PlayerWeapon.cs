@@ -24,7 +24,7 @@ public class PlayerWeapon : WeaponBase
     public float spreadIntensity;
 
     public GameObject muzzleEffect;
-    private Animator animator;
+    internal Animator animator;
 
     // Reloading
     public float reloadTime;
@@ -140,6 +140,8 @@ public class PlayerWeapon : WeaponBase
     {
         if (isActiveWeapon)
         {
+            GetComponent<Outline>().enabled = false;
+
             if (bulletsLeft == 0 && isShooting)
             {
                 SoundManager.Instance.emptyMagazineSoundM1911.Play();

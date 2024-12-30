@@ -9,6 +9,11 @@ public class WeaponPickUpHandTracker : HandTracker
     [SerializeField]
     private OAKForUnity.UBHandTracking handTracking;
 
+    void Awake()
+    {
+        requiredStableTime = 0.1f;
+    }
+
     public override int HandleGesture()
     {
         if (string.IsNullOrEmpty(handTracking.ubHandTrackingResults)) return -1;
