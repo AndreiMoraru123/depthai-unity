@@ -106,7 +106,6 @@ public class WeaponPickUp : Interactable
         var hoveredWeapon = InteractionManager.Instance.hoveredWeapon;
         if (hoveredWeapon != null)
         {
-            Debug.Log("Picked up weapon");
             WeaponManager.Instance.PickupWeapon(hoveredWeapon.gameObject);
             InteractionManager.Instance.hoveredWeapon = null;
         }

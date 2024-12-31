@@ -96,25 +96,16 @@ public class ThrowablePickUp : Interactable
     public override bool ValidateInteraction()
     {
         int number;
-        try
+        string gesture;
+        if (handTracker != null)
         {
             number = handTracker.CountFingersOnHand();
-        }
-        catch // Throwables
-        {
-            number = -1;
-        }
-
-        string gesture;
-        try
-        {
             gesture = handTracker.NumberToString(number);
         }
-        catch // Throwables
+        else // Throwables
         {
             gesture = "INVALID";
         }
-
         return gesture == requiredGesture;
     }
 
@@ -123,7 +114,6 @@ public class ThrowablePickUp : Interactable
         var hoveredThrowable = InteractionManager.Instance.hoveredThrowable;
         if (hoveredThrowable != null)
         {
-            Debug.Log("Picked up ammo");
             WeaponManager.Instance.PickUpThrowable(hoveredThrowable);
             InteractionManager.Instance.hoveredThrowable = null;
         }

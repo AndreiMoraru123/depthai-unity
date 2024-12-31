@@ -105,7 +105,6 @@ public class AmmoPickUp : Interactable
         var hoveredAmmo = InteractionManager.Instance.hoveredAmmo;
         if (hoveredAmmo != null)
         {
-            Debug.Log("Picked up ammo");
             WeaponManager.Instance.PickupAmmo(hoveredAmmo);
             InteractionManager.Instance.hoveredAmmo = null;
         }
