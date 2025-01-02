@@ -9,6 +9,8 @@ TagManager:
   - Solid
   - Beer
   - Enemy
+  - Waypoints
+  - XBotAttackHand
   layers:
   - Default
   - TransparentFX
