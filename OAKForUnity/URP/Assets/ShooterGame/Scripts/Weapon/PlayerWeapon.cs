@@ -186,15 +186,13 @@ public class PlayerWeapon : WeaponBase
         StartCoroutine(DestroyBulletAfterTime(bullet, bulletPrefabLifetime));
     }
 
+
     void Update()
     {
         if (isActiveWeapon)
         {
-            foreach (Transform child in transform)
-            {
-                // TODO: Choose a layer only for the weapon UI instead
-                // child.gameObject.layer = LayerMask.NameToLayer("WeaponRender");
-            }
+            // Avoid clipping through walls
+            SetLayerRecursively(gameObject, LayerMask.NameToLayer("WeaponRender"));
 
             // Right mouse button for ADS
             if (Input.GetMouseButtonDown(1))
@@ -242,11 +240,18 @@ public class PlayerWeapon : WeaponBase
         }
         else
         {
-            foreach (Transform child in transform)
-            {
-                // TODO: Switch back to the layer needed for picking up
-                // child.gameObject.layer = LayerMask.NameToLayer("Weapon");
-            }
+            // back to picking up layer
+            SetLayerRecursively(gameObject, LayerMask.NameToLayer("Weapon"));
+        }
+    }
+
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        obj.layer = newLayer;
+
+        foreach (Transform child in obj.transform)
+        {
+            SetLayerRecursively(child.gameObject, newLayer);
         }
     }
 
