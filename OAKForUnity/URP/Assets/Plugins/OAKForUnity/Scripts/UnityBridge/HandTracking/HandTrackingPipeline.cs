@@ -4,13 +4,12 @@ using UnityEngine;
 
 namespace OAKForUnity
 {
-    public class HandTracking : PredefinedBase
+    public class HandTrackingPipeline : PredefinedBase
     {
 
         [Header("Results")]
         public Texture2D colorTexture;
-        public string ubHandTrackingResults;
-        public int countData;
+        public string handTrackingResults;
 
         // private attributes
         private Color32[] _colorPixel32;
@@ -38,7 +37,6 @@ namespace OAKForUnity
 
             // Init FrameInfo. Only need it in case memcpy data ptr on plugin lib.
             frameInfo.colorPreviewData = _colorPixelPtr;
-            countData = -1;
         }
 
         // Prepare Pipeline Configuration and call pipeline init implementation
@@ -81,7 +79,7 @@ namespace OAKForUnity
             {
                 if (useUnityBridge)
                 {
-                    ubHandTrackingResults = tcpClientBehaviour.GetResults(out colorTexture);
+                    handTrackingResults = tcpClientBehaviour.GetResults(out colorTexture);
                 }
                 /*else
                 {
@@ -95,7 +93,7 @@ namespace OAKForUnity
             // if replay read results from file
             else
             {
-                ubHandTrackingResults = device.results;
+                handTrackingResults = device.results;
             }
         }
 
@@ -120,7 +118,7 @@ namespace OAKForUnity
                 }
             }
 
-            if (string.IsNullOrEmpty(ubHandTrackingResults)) return;
+            if (string.IsNullOrEmpty(handTrackingResults)) return;
         }
     }
 }

@@ -15,7 +15,7 @@ namespace OAKForUnity
         // public attributes
 
         // Pipeline for texture binding
-        public HandTracking pipeline;
+        public HandTrackingPipeline pipeline;
 
         [Header("UI Binding")]
         public Image colorCameraImage;
