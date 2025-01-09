@@ -32,6 +32,7 @@ namespace OAKForUnity
         [Header("Results")]
         public Texture2D colorTexture;
         public string ubHandTrackingResults;
+        public GameObject light;
         public int countData;
         [Header("Hand 0")]
         public Vector3[] landmarks;
@@ -184,7 +185,7 @@ namespace OAKForUnity
             }
             else
             {
-                // if (countData + 2 < arr2[0]) Debug.LogError("MISSING DATA " + countData + " " + arr2[0]);
+                if (countData + 2 < arr2[0]) Debug.LogError("MISSING DATA " + countData + " " + arr2[0]);
                 countData = arr2[0];
             }
 
@@ -197,6 +198,18 @@ namespace OAKForUnity
             {
                 hand0 = json["hand_1"];
                 hand1 = json["hand_0"];
+            }
+
+            // TODO: Create method to manage each hand
+            if (hand0 != null)
+            {
+                if (hand0["gesture"] == "FIST")
+                {
+                    float rotation = (float)hand0["rotation"];
+                    rotation *= 0.1f;
+                    light.transform.Rotate(Vector3.right, rotation);
+                }
+
             }
 
             var arr = hand0["world_landmarks"];

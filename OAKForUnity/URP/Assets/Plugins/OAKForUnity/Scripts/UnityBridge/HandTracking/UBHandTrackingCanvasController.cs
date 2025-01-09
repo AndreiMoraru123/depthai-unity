@@ -39,7 +39,7 @@ namespace OAKForUnity
         void Update()
         {
             if (pipeline.deviceRunning && !_init) Init();
-            // ubHandTrackingResults.text = pipeline.ubHandTrackingResults;
+            ubHandTrackingResults.text = pipeline.ubHandTrackingResults;
         }
     }
 }
