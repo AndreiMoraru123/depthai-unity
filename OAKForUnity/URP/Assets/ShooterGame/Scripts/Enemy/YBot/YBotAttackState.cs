@@ -29,37 +29,37 @@ public class YBotAttackState : StateMachineBehaviour
 
     override public void OnStateUpdate(Animator animator, AnimatorStateInfo stateInfo, int layerIndex)
     {
-        // if (CanSeePlayer())
-        // {
-        LookAtPlayer();
-        weapon?.ShootAtTarget(enemy.Player.transform);
-        // }
-        // else
-        // {
-        // check if the agent should stop attacking
-        var distanceFromPlayer = Vector3.Distance(player.position, animator.transform.position);
-
-        if (distanceFromPlayer > stopAttackingDistance)
+        if (CanSeePlayer())
         {
-            animator.SetBool("isAttacking", false);
+            LookAtPlayer();
+            weapon?.ShootAtTarget(enemy.Player.transform);
         }
+        else
+        {
+            // check if the agent should stop attacking
+            var distanceFromPlayer = Vector3.Distance(player.position, animator.transform.position);
 
-        // }
+            if (distanceFromPlayer > stopAttackingDistance)
+            {
+                animator.SetBool("isAttacking", false);
+            }
+
+        }
     }
 
     private bool CanSeePlayer()
     {
         if (Vector3.Distance(agent.transform.position, player.position) < sightDistance)
         {
-            Vector3 targetDirection = player.position - agent.transform.position - (Vector3.up * eyeHeight);
+            var targetDirection = player.position - agent.transform.position - (Vector3.up * eyeHeight);
             var angleToPlayer = Vector3.Angle(targetDirection, agent.transform.forward);
             if (angleToPlayer >= -fieldOfView && angleToPlayer <= fieldOfView)
             {
                 var ray = new Ray(agent.transform.position + (Vector3.up * eyeHeight), targetDirection);
-                if (Physics.Raycast(ray, out RaycastHit hitInfo, sightDistance, detectionLayers)) // Added detectionLayers here
+                if (Physics.Raycast(ray, out RaycastHit hitInfo, sightDistance, detectionLayers))
                 {
                     Debug.DrawRay(ray.origin, ray.direction * sightDistance,
-                        hitInfo.transform.gameObject == player.gameObject ? Color.green : Color.red);
+                                  hitInfo.transform.gameObject == player.gameObject ? Color.green : Color.red);
                     return hitInfo.transform.gameObject == player.gameObject;
                 }
             }
