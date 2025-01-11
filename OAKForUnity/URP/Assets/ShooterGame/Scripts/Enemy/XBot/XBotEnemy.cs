@@ -49,23 +49,6 @@ public class XBotEnemy : Enemy
         }
     }
 
-    private IEnumerator DisableCollider()
-    {
-        yield return new WaitForSeconds(1f);
-        gameObject.GetComponent<Collider>().enabled = false;
-    }
-
-    private IEnumerator DisableAnimator()
-    {
-        yield return new WaitForSeconds(5f);
-        animator.enabled = false;
-    }
-    private IEnumerator DisableGameObject()
-    {
-        yield return new WaitForSeconds(10f);
-        gameObject.SetActive(false);
-    }
-
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;

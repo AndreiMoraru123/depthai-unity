@@ -21,4 +21,20 @@ public class Enemy : MonoBehaviour
     }
 
     public virtual void TakeDamage(int amount) { }
+    protected IEnumerator DisableCollider()
+    {
+        yield return new WaitForSeconds(1f);
+        gameObject.GetComponent<Collider>().enabled = false;
+    }
+
+    protected IEnumerator DisableAnimator()
+    {
+        yield return new WaitForSeconds(5f);
+        animator.enabled = false;
+    }
+    protected IEnumerator DisableGameObject()
+    {
+        yield return new WaitForSeconds(10f);
+        gameObject.SetActive(false);
+    }
 }
