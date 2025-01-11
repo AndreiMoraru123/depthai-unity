@@ -1,7 +1,5 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using UnityEngine;
-using UnityEngine.AI;
 
 public class XBotEnemy : Enemy
 {
@@ -15,7 +13,6 @@ public class XBotEnemy : Enemy
         {
             xBotHand.damage = xBotDamage;
         }
-        agent = GetComponent<NavMeshAgent>();
     }
 
     public override void TakeDamage(int amount)

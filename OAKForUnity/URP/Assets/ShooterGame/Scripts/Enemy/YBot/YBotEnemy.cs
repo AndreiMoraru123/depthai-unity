@@ -1,22 +1,18 @@
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
 public class YBotEnemy : Enemy
 {
+    LayerMask detectionLayers;
     public Transform gunBarrel;
 
     [Header("Vision Settings")]
     public float sightDistance = 18f;
     public float fieldOfView = 85f;
     public float eyeHeight = 1.5f;
-    public LayerMask detectionLayers;
 
     void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
         detectionLayers = Physics.DefaultRaycastLayers & ~(1 << LayerMask.NameToLayer("WeaponRender"));
     }
 
@@ -58,7 +54,6 @@ public class YBotEnemy : Enemy
         return false;
     }
 
-
     private void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
@@ -70,6 +65,5 @@ public class YBotEnemy : Enemy
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, 21f);  // stop chasing
     }
-
 }
 

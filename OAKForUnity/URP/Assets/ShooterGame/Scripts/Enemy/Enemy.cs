@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -21,12 +22,16 @@ public class Enemy : MonoBehaviour
     }
 
     public virtual void TakeDamage(int amount) { }
+
+    public void ApplyBlindness()
+    {
+        animator.SetTrigger("BLINDED");
+    }
     protected IEnumerator DisableCollider()
     {
         yield return new WaitForSeconds(1f);
         gameObject.GetComponent<Collider>().enabled = false;
     }
-
     protected IEnumerator DisableAnimator()
     {
         yield return new WaitForSeconds(5f);
