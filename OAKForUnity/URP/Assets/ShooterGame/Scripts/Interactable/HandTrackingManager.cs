@@ -5,7 +5,7 @@ using SimpleJSON;
 using UnityEngine;
 using OAKForUnity;
 
-public class HandTracker : MonoBehaviour
+public class HandTrackingManager : MonoBehaviour
 {
     [SerializeField]
     private HandTrackingPipeline pipeline;
@@ -15,21 +15,26 @@ public class HandTracker : MonoBehaviour
     protected float gestureStableTime = 0f;
     protected int lastRecognizedGesture = -1;
 
+    private static readonly Dictionary<string, int> GestureToNumber = new() {
+        {"FIST", 0},
+        {"OK", 1},
+        {"ONE", 1},
+        {"PEACE", 2},
+        {"TWO", 2},
+        {"THREE", 3},
+        {"FOUR", 4},
+        {"FIVE", 5},
+    };
+
     public int CountFingers(JSONNode hand)
     {
-        if (hand == null) return -1;
-        if (hand["gesture"] == "FIST") return 0;
-        if (hand["gesture"] == "OK" || hand["gesture"] == "ONE") return 1;
-        if (hand["gesture"] == "PEACE" || hand["gesture"] == "TWO") return 2;
-        if (hand["gesture"] == "THREE") return 3;
-        if (hand["gesture"] == "FOUR") return 4;
-        if (hand["gesture"] == "FIVE") return 5;
-        return -1;
+        if (hand == null || hand["gesture"] == null) return -1;
+        return GestureToNumber.TryGetValue(hand["gesture"], out var count) ? count : -1;
     }
 
-    public string NumberToString(int gesture)
+    public string GetGestureFromNumber(int number)
     {
-        return gesture switch
+        return number switch
         {
             0 => "FIST",
             5 => "PALM",
