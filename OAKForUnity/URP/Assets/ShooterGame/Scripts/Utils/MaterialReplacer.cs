@@ -8,11 +8,11 @@ public class MaterialReplacer : MonoBehaviour
     [ContextMenu("Replace Materials")]
     private void ReplaceMaterials()
     {
-        MeshRenderer[] renderers = transform.GetComponentsInChildren<MeshRenderer>();
+        var renderers = transform.GetComponentsInChildren<MeshRenderer>();
 
         Undo.RecordObjects(renderers, "Replace Materials");
 
-        foreach (MeshRenderer rend in renderers)
+        foreach (var rend in renderers)
         {
             rend.sharedMaterial = newMaterial;
         }
