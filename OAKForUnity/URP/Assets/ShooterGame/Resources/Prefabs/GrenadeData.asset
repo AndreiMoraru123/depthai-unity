@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: GrenadeData
   m_EditorClassIdentifier: 
   throwableType: 1
-  damageRadius: 20
-  explosionForce: 1200
+  damageRadius: 10
+  explosionForce: 1500
   delay: 3
   damage: 100

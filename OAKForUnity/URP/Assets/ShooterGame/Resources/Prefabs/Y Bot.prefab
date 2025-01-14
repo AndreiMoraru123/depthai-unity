@@ -1117,7 +1117,7 @@ MonoBehaviour:
   isDead: 0
   gunBarrel: {fileID: 146316130}
   sightDistance: 18
-  fieldOfView: 15
+  fieldOfView: 35
   eyeHeight: 1.5
 --- !u!1 &2895939409649295176
 GameObject:

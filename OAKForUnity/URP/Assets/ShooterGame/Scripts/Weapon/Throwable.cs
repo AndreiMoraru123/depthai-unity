@@ -125,7 +125,6 @@ public class Throwable : MonoBehaviour
 
             if (objectInRange.gameObject.TryGetComponent(out Enemy enemy) && !enemy.isDead)
             {
-                // TODO: Do I want to hard code this?
                 enemy.TakeDamage(throwableData.damage);
             }
         }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SmokeData
   m_EditorClassIdentifier: 
   throwableType: 2
-  damageRadius: 20
+  damageRadius: 10
   explosionForce: 0
   delay: 3
   damage: 0
