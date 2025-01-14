@@ -12,14 +12,14 @@ namespace OAKForUnity
     public class UBHandTrackingCanvasController : MonoBehaviour
     {
         // public attributes
-        
+
         // Pipeline for texture binding
         public UBHandTracking pipeline;
-        
-        [Header("UI Binding")] 
+
+        [Header("UI Binding")]
         public Image colorCameraImage;
         public TMPro.TextMeshProUGUI ubHandTrackingResults;
-        
+
         private bool _init = false;
 
         // Start is called before the first frame update

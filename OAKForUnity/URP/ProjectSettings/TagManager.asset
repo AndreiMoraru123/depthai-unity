@@ -5,15 +5,21 @@ TagManager:
   serializedVersion: 2
   tags:
   - OAKDevice
+  - Target
+  - Solid
+  - Beer
+  - Enemy
+  - Waypoints
+  - XBotAttackHand
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Weapon
   - Water
   - UI
-  - 
-  - 
+  - Interactable
+  - WeaponRender
   - 
   - 
   - 

@@ -18,7 +18,7 @@ public class TcpClientBehaviour : MonoBehaviour
 {
     public string host;
     public int port;
-    
+
     private TcpClient client;
     private Thread clientThread;
 
@@ -26,9 +26,9 @@ public class TcpClientBehaviour : MonoBehaviour
     private string _json;
     private byte[] _pendingImageData = null;
     private byte[] _pendingJsonData = null;
-   
+
     private bool _connected;
-    
+
     int bytesRead;
     MemoryStream jsonMemoryStream = new MemoryStream();
     MemoryStream memoryStream = new MemoryStream();
@@ -40,11 +40,11 @@ public class TcpClientBehaviour : MonoBehaviour
     {
         _connected = false;
         // Initialize the client and connect in a separate thread
-        client = new TcpClient(framing: false); 
-        
+        client = new TcpClient(framing: false);
+
         _texture = new Texture2D(2, 2);
         _json = "";
-        
+
         client.OnOpen(() =>
         {
             Debug.Log("Client connected");
@@ -68,60 +68,60 @@ public class TcpClientBehaviour : MonoBehaviour
             // Remember to marshal this call back to the main thread if you're updating Unity objects
             //Debug.Log("GET JSON: "+_getJson);
             //Debug.Log("DATA: "+data.Length+" 0:"+data[0]);
-            
-            byte[] delimiterBytes = Encoding.ASCII.GetBytes(DELIMITER); 
+
+            byte[] delimiterBytes = Encoding.ASCII.GetBytes(DELIMITER);
             byte[] delimiterEndBytes = Encoding.ASCII.GetBytes(DELIMITER_END);
-            
-            if (data == delimiterBytes) 
+
+            if (data == delimiterBytes)
             {
-            	_getJson=2;
+                _getJson = 2;
             }
-            
+
             if (_getJson == 1)
-			{
-			    jsonMemoryStream.Write(data, 0, data.Length);
+            {
+                jsonMemoryStream.Write(data, 0, data.Length);
 
-			    // Check if the delimiter is in the received data
-			    int delimiterIndex = FindDelimiterIndex(jsonMemoryStream.ToArray(), delimiterBytes);
-			    if (delimiterIndex >= 0) // Delimiter found
-			    {
-					// Split the data at the delimiter
-					int jsonPartLength = delimiterIndex;
-					int imagePartStartIndex = delimiterIndex + delimiterBytes.Length;
+                // Check if the delimiter is in the received data
+                int delimiterIndex = FindDelimiterIndex(jsonMemoryStream.ToArray(), delimiterBytes);
+                if (delimiterIndex >= 0) // Delimiter found
+                {
+                    // Split the data at the delimiter
+                    int jsonPartLength = delimiterIndex;
+                    int imagePartStartIndex = delimiterIndex + delimiterBytes.Length;
 
-					// Extract JSON data
-					_pendingJsonData = new byte[jsonPartLength];
-					Array.Copy(jsonMemoryStream.ToArray(), 0, _pendingJsonData, 0, jsonPartLength);
-					// Prepare for image data reception
-					jsonMemoryStream.SetLength(0); // Reset the JSON memory stream
-					jsonMemoryStream.Position = 0;
+                    // Extract JSON data
+                    _pendingJsonData = new byte[jsonPartLength];
+                    Array.Copy(jsonMemoryStream.ToArray(), 0, _pendingJsonData, 0, jsonPartLength);
+                    // Prepare for image data reception
+                    jsonMemoryStream.SetLength(0); // Reset the JSON memory stream
+                    jsonMemoryStream.Position = 0;
 
-					if (data.Length > imagePartStartIndex) // If there's image data following the delimiter
-					{
-					    // Write the initial part of the image data to the memoryStream
-					    memoryStream.Write(data, imagePartStartIndex, data.Length - imagePartStartIndex);
-					}
+                    if (data.Length > imagePartStartIndex) // If there's image data following the delimiter
+                    {
+                        // Write the initial part of the image data to the memoryStream
+                        memoryStream.Write(data, imagePartStartIndex, data.Length - imagePartStartIndex);
+                    }
 
-					_getJson = 2; // Move to image parsing state
-			    }
-			}
-			else if (_getJson == 2)
-			{
-			    // Parse image
-			    memoryStream.Write(data, 0, data.Length);
-                
+                    _getJson = 2; // Move to image parsing state
+                }
+            }
+            else if (_getJson == 2)
+            {
+                // Parse image
+                memoryStream.Write(data, 0, data.Length);
+
                 int delimiterEndIndex = FindDelimiterIndex(memoryStream.ToArray(), delimiterEndBytes);
                 if (delimiterEndIndex >= 0) // Delimiter found
-			    {
+                {
                     byte[] totalData = memoryStream.ToArray();
-					_pendingImageData = new byte[totalData.Length];
-					Array.Copy(totalData, 0, _pendingImageData, 0, _pendingImageData.Length-delimiterEndBytes.Length);
+                    _pendingImageData = new byte[totalData.Length];
+                    Array.Copy(totalData, 0, _pendingImageData, 0, _pendingImageData.Length - delimiterEndBytes.Length);
 
-					memoryStream.SetLength(0);
-					memoryStream.Position = 0;
-					_getJson = 0; // Reset or move to the next state as needed
-			    }
-			}        
+                    memoryStream.SetLength(0);
+                    memoryStream.Position = 0;
+                    _getJson = 0; // Reset or move to the next state as needed
+                }
+            }
         });
 
         client.OnEvent((string name, byte[] data) =>
@@ -139,7 +139,7 @@ public class TcpClientBehaviour : MonoBehaviour
     // Helper method to find the delimiter in the data
     int FindDelimiterIndex(byte[] data, byte[] delimiter)
     {
-        for (int i = 0; i < data.Length - delimiter.Length+1; i++)
+        for (int i = 0; i < data.Length - delimiter.Length + 1; i++)
         {
             bool match = true;
             for (int j = 0; j < delimiter.Length; j++)
@@ -154,7 +154,7 @@ public class TcpClientBehaviour : MonoBehaviour
         }
         return -1; // Delimiter not found
     }
-    
+
     public bool InitUB()
     {
         clientThread = new Thread(() => client.Open(new Host(host, port)));
@@ -195,7 +195,7 @@ public class TcpClientBehaviour : MonoBehaviour
             clientThread.Abort();
         }
     }
-    
+
     void OnDestroy()
     {
         // Close the client

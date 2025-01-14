@@ -8,7 +8,7 @@ namespace OAKForUnity
     public class UBHandTracking : PredefinedBase
     {
         // For future compatibility between UB and standard C++ plugin
-        
+
         //Lets make our calls from the Plugin
         //[DllImport("depthai-unity", CallingConvention = CallingConvention.Cdecl)]
         /*
@@ -26,10 +26,10 @@ namespace OAKForUnity
         * @param frameInfo camera images pointers
         * ................
         * @returns Json with results or information about device availability. 
-        */    
+        */
         //private static extern IntPtr UBTestResults(out FrameInfo frameInfo, bool getPreview, int width, int height,  ...., int deviceNum);
 
-        [Header("Results")] 
+        [Header("Results")]
         public Texture2D colorTexture;
         public string ubHandTrackingResults;
         public GameObject light;
@@ -46,7 +46,7 @@ namespace OAKForUnity
         public Vector2[] connections1;
 
         private float _oldRotation;
-        
+
         // private attributes
         private Color32[] _colorPixel32;
         private GCHandle _colorPixelHandle;
@@ -68,7 +68,7 @@ namespace OAKForUnity
         {
             // Init dataPath to load body pose NN model
             _dataPath = Application.dataPath;
-            
+
             InitTexture();
 
             // Init FrameInfo. Only need it in case memcpy data ptr on plugin lib.
@@ -92,7 +92,7 @@ namespace OAKForUnity
             config.colorCameraColorOrder = (int) ColorOrderV;
             ....
             */
-            
+
             deviceRunning = false;
             if (useUnityBridge)
             {
@@ -141,14 +141,14 @@ namespace OAKForUnity
         {
             Vector3 v3Start = sp1.transform.position;
             Vector3 v3End = sp2.transform.position;
-     
-            cyl.transform.position = (v3End - v3Start)/2.0f + v3Start;
-     
-            Vector3 v3T = cyl.transform.localScale; 
-            v3T.y = (v3End - v3Start).magnitude/2; 
-        
+
+            cyl.transform.position = (v3End - v3Start) / 2.0f + v3Start;
+
+            Vector3 v3T = cyl.transform.localScale;
+            v3T.y = (v3End - v3Start).magnitude / 2;
+
             cyl.transform.localScale = v3T;
-     
+
             cyl.transform.rotation = Quaternion.FromToRotation(Vector3.up, v3End - v3Start);
         }
 
@@ -185,10 +185,10 @@ namespace OAKForUnity
             }
             else
             {
-                if (countData+2 < arr2[0]) Debug.LogError("MISSING DATA "+countData+ " "+arr2[0]);
+                if (countData + 2 < arr2[0]) Debug.LogError("MISSING DATA " + countData + " " + arr2[0]);
                 countData = arr2[0];
             }
-            
+
             // PROCESS HANDS INFO
             var hand0 = json["hand_0"];
             var hand1 = json["hand_1"];
@@ -199,19 +199,19 @@ namespace OAKForUnity
                 hand0 = json["hand_1"];
                 hand1 = json["hand_0"];
             }
-            
+
             // TODO: Create method to manage each hand
             if (hand0 != null)
             {
                 if (hand0["gesture"] == "FIST")
                 {
-                    float rotation = (float) hand0["rotation"];
+                    float rotation = (float)hand0["rotation"];
                     rotation *= 0.1f;
                     light.transform.Rotate(Vector3.right, rotation);
                 }
 
             }
-            
+
             var arr = hand0["world_landmarks"];
 
             for (int i = 0; i < 21; i++)
@@ -227,31 +227,31 @@ namespace OAKForUnity
                     cylinders[i].SetActive(false);
                 }
             }
-            
+
             int index = 0;
-            foreach(JSONNode obj in arr)
+            foreach (JSONNode obj in arr)
             {
-                float x = 0.0f,y = 0.0f,z = 0.0f;
+                float x = 0.0f, y = 0.0f, z = 0.0f;
                 float kx = 0.0f, ky = 0.0f;
 
                 x = obj[0];
-                y = obj[1]*-1.0f;
+                y = obj[1] * -1.0f;
                 z = obj[2];
 
-                landmarks[index] = new Vector3(x,y,z);
-                if (x!=0 && y!=0 && z!=0) 
+                landmarks[index] = new Vector3(x, y, z);
+                if (x != 0 && y != 0 && z != 0)
                 {
                     skeleton[index].SetActive(true);
                     skeleton[index].transform.position = landmarks[index];
                 }
-        
+
                 index++;
             }
 
             bool allZero = true;
-            for (int i=0; i<21; i++)
+            for (int i = 0; i < 21; i++)
             {
-                if (landmarks[i]!=Vector3.zero) 
+                if (landmarks[i] != Vector3.zero)
                 {
                     allZero = false;
                     break;
@@ -261,25 +261,25 @@ namespace OAKForUnity
             // Update skeleton and movement
             if (!allZero)
             {
-                for (int i = 0; i<21; i++) if (landmarks[i] == Vector3.zero) skeleton[i].SetActive(false);
+                for (int i = 0; i < 21; i++) if (landmarks[i] == Vector3.zero) skeleton[i].SetActive(false);
 
                 // place dots connections
-                for (int i=0; i<21; i++)
+                for (int i = 0; i < 21; i++)
                 {
                     int s = (int)connections[i].x;
                     int e = (int)connections[i].y;
-                    
-                    if (landmarks[s] != Vector3.zero && landmarks[e]!=Vector3.zero)
+
+                    if (landmarks[s] != Vector3.zero && landmarks[e] != Vector3.zero)
                     {
                         cylinders[i].SetActive(true);
-                        PlaceConnection(skeleton[s],skeleton[e],cylinders[i]);
+                        PlaceConnection(skeleton[s], skeleton[e], cylinders[i]);
                     }
                     else cylinders[i].SetActive(false);
                 }
             }
-            
+
             // HAND 1
-            
+
             // PROCESS HANDS INFO
             //var hand1 = json["hand_1"];
 
@@ -287,14 +287,14 @@ namespace OAKForUnity
             {
                 if (hand1["gesture"] == "FIST")
                 {
-                    float rotation = (float) hand1["rotation"];
+                    float rotation = (float)hand1["rotation"];
                     //
                 }
             }
-            
+
             var arr1 = hand1["world_landmarks"];
 
-            for (int i = 0; i<21; i++) landmarks1[i] = Vector3.zero;
+            for (int i = 0; i < 21; i++) landmarks1[i] = Vector3.zero;
 
             if (arr1 == null)
             {
@@ -305,31 +305,31 @@ namespace OAKForUnity
                 }
             }
 
-            
+
             index = 0;
-            foreach(JSONNode obj in arr1)
+            foreach (JSONNode obj in arr1)
             {
-                float x = 0.0f,y = 0.0f,z = 0.0f;
+                float x = 0.0f, y = 0.0f, z = 0.0f;
                 float kx = 0.0f, ky = 0.0f;
 
-                x = obj[0]+0.5f;
-                y = obj[1]*-1.0f;
+                x = obj[0] + 0.5f;
+                y = obj[1] * -1.0f;
                 z = obj[2];
 
-                landmarks1[index] = new Vector3(x,y,z);
-                if (x!=0 && y!=0 && z!=0) 
+                landmarks1[index] = new Vector3(x, y, z);
+                if (x != 0 && y != 0 && z != 0)
                 {
                     skeleton1[index].SetActive(true);
                     skeleton1[index].transform.position = landmarks1[index];
                 }
-        
+
                 index++;
             }
 
             bool allZero1 = true;
-            for (int i=0; i<21; i++)
+            for (int i = 0; i < 21; i++)
             {
-                if (landmarks1[i]!=Vector3.zero) 
+                if (landmarks1[i] != Vector3.zero)
                 {
                     allZero1 = false;
                     break;
@@ -339,18 +339,18 @@ namespace OAKForUnity
             // Update skeleton and movement
             if (!allZero1)
             {
-                for (int i = 0; i<21; i++) if (landmarks1[i] == Vector3.zero) skeleton1[i].SetActive(false);
+                for (int i = 0; i < 21; i++) if (landmarks1[i] == Vector3.zero) skeleton1[i].SetActive(false);
 
                 // place dots connections
-                for (int i=0; i<21; i++)
+                for (int i = 0; i < 21; i++)
                 {
                     int s = (int)connections1[i].x;
                     int e = (int)connections1[i].y;
-                    
-                    if (landmarks1[s] != Vector3.zero && landmarks1[e]!=Vector3.zero)
+
+                    if (landmarks1[s] != Vector3.zero && landmarks1[e] != Vector3.zero)
                     {
                         cylinders1[i].SetActive(true);
-                        PlaceConnection(skeleton1[s],skeleton1[e],cylinders1[i]);
+                        PlaceConnection(skeleton1[s], skeleton1[e], cylinders1[i]);
                     }
                     else cylinders1[i].SetActive(false);
                 }
